@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
@@ -117,5 +118,89 @@ def test_offices_ui_list_route_no_redirect_and_query_params_preserved() -> None:
     assert trailing_res.status_code == 200
     assert "Alpha" in trailing_res.text
     assert "Beta" not in trailing_res.text
+
+    app.dependency_overrides.clear()
+
+
+def test_offices_ui_sorting_behaviour_and_params_preserved() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    now = datetime.now(timezone.utc)
+    with Session(engine) as session:
+        session.add(
+            OfficeModel(
+                name="Zulu",
+                address="Zulu St",
+                lat=40.0,
+                lng=-73.0,
+                storage_capacity=10,
+                created_at=now - timedelta(days=2),
+                updated_at=now - timedelta(days=2),
+            )
+        )
+        session.add(
+            OfficeModel(
+                name="Alpha",
+                address="Alpha St",
+                lat=40.0,
+                lng=-73.0,
+                storage_capacity=10,
+                created_at=now - timedelta(days=1),
+                updated_at=now - timedelta(days=1),
+            )
+        )
+        session.add(
+            OfficeModel(
+                name="Bravo",
+                address="Bravo St",
+                lat=40.0,
+                lng=-73.0,
+                storage_capacity=10,
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        session.commit()
+
+    default_res = client.get("/offices", headers={"HX-Request": "true"})
+    assert default_res.status_code == 200
+    assert default_res.text.index("Bravo") < default_res.text.index("Alpha") < default_res.text.index("Zulu")
+    assert 'Created<span aria-hidden="true">↓</span>' in default_res.text
+
+    name_asc_res = client.get(
+        "/offices?sort=name&order=asc",
+        headers={"HX-Request": "true"},
+    )
+    assert name_asc_res.status_code == 200
+    assert name_asc_res.text.index("Alpha") < name_asc_res.text.index("Bravo") < name_asc_res.text.index("Zulu")
+    assert 'Name<span aria-hidden="true">↑</span>' in name_asc_res.text
+
+    name_desc_res = client.get(
+        "/offices?sort=name&order=desc",
+        headers={"HX-Request": "true"},
+    )
+    assert name_desc_res.status_code == 200
+    assert name_desc_res.text.index("Zulu") < name_desc_res.text.index("Bravo") < name_desc_res.text.index("Alpha")
+    assert 'Name<span aria-hidden="true">↓</span>' in name_desc_res.text
+
+    preserved_params_res = client.get(
+        "/offices?search=Alpha&page_size=5&sort=name&order=asc",
+        headers={"HX-Request": "true"},
+    )
+    assert preserved_params_res.status_code == 200
+    assert "search=Alpha&sort=name&order=desc" in preserved_params_res.text
+    assert "page=1&page_size=5&search=Alpha&sort=name&order=desc" in preserved_params_res.text
 
     app.dependency_overrides.clear()
