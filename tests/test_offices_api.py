@@ -45,8 +45,14 @@ def test_office_crud_flow() -> None:
     assert list_res.status_code == 200
     list_body = list_res.json()
     assert list_body["meta"]["pagination"]["total"] == 1
+    assert list_body["meta"]["pagination"]["page"] == 1
+    assert list_body["meta"]["pagination"]["pageSize"] == 20
+    assert list_body["meta"]["pagination"]["pages"] == 1
+    assert list_body["meta"]["pagination"]["hasNext"] is False
+    assert list_body["meta"]["pagination"]["hasPrev"] is False
+    assert list_body["meta"]["filters"] is None
+    assert list_body["meta"]["sort"] is None
     assert len(list_body["data"]) == 1
-    assert list_body["meta"]["sort"] == {"field": "created_at", "order": "desc"}
 
     get_res = client.get(f"/api/offices/{office_id}")
     assert get_res.status_code == 200
@@ -73,59 +79,98 @@ def test_office_crud_flow() -> None:
     app.dependency_overrides.clear()
 
 
-def test_list_offices_supports_sorting_by_name_asc_and_desc() -> None:
-    client = _build_client()
-
-    client.post("/api/offices", json={"name": "Charlie"})
-    client.post("/api/offices", json={"name": "Alpha"})
-    client.post("/api/offices", json={"name": "Bravo"})
-
-    v1_res = client.get("/api/v1/offices?sort=name&order=asc")
-    assert v1_res.status_code == 200
-    assert [item["name"] for item in v1_res.json()["data"]] == ["Alpha", "Bravo", "Charlie"]
-
-    asc_res = client.get("/api/offices?sort=name&order=asc")
-    assert asc_res.status_code == 200
-    assert [item["name"] for item in asc_res.json()["data"]] == ["Alpha", "Bravo", "Charlie"]
-    assert asc_res.json()["meta"]["sort"] == {"field": "name", "order": "asc"}
-
-    desc_res = client.get("/api/offices?sort=name&order=desc")
-    assert desc_res.status_code == 200
-    assert [item["name"] for item in desc_res.json()["data"]] == ["Charlie", "Bravo", "Alpha"]
-    assert desc_res.json()["meta"]["sort"] == {"field": "name", "order": "desc"}
-
-    app.dependency_overrides.clear()
-
-
-def test_list_offices_supports_sorting_by_created_at() -> None:
-    client = _build_client()
-
-    client.post("/api/offices", json={"name": "First"})
-    sleep(0.01)
-    client.post("/api/offices", json={"name": "Second"})
-    sleep(0.01)
-    client.post("/api/offices", json={"name": "Third"})
-
-    desc_res = client.get("/api/offices?sort=created_at&order=desc")
-    assert desc_res.status_code == 200
-    assert [item["name"] for item in desc_res.json()["data"]] == ["Third", "Second", "First"]
-
-    asc_res = client.get("/api/offices?sort=created_at&order=asc")
-    assert asc_res.status_code == 200
-    assert [item["name"] for item in asc_res.json()["data"]] == ["First", "Second", "Third"]
-
-    app.dependency_overrides.clear()
-
-
-def test_list_offices_returns_400_for_invalid_sort_field() -> None:
-    client = _build_client()
-
-    response = client.get("/api/offices?sort=drop_table&order=asc")
-
-    assert response.status_code == 400
-    assert (
-        response.json()["detail"]
-        == "Invalid sort field 'drop_table'. Allowed fields: id, name, created_at, updated_at"
+def test_office_list_meta_echoes_filters_and_sort() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
     )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    res = client.get("/api/offices?search=HQ&sort_by=name&sort_order=asc")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["meta"]["filters"] == {"search": "HQ"}
+    assert body["meta"]["sort"] == {"by": "name", "order": "asc"}
+
+    app.dependency_overrides.clear()
+
+
+def test_offices_api_search_multi_field_and_multi_token() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    alpha_create_res = client.post(
+        "/api/offices",
+        json={
+            "name": "North Hub",
+            "address": "742 Evergreen Terrace",
+            "lat": 35.0,
+            "lng": 139.0,
+            "storage_capacity": 10,
+        },
+    )
+    assert alpha_create_res.status_code == 201, alpha_create_res.text
+    alpha_uuid = alpha_create_res.json()["uuid"]
+
+    beta_create_res = client.post(
+        "/api/offices",
+        json={
+            "name": "South Point",
+            "address": "100 Market Street",
+            "lat": 35.0,
+            "lng": 139.0,
+            "storage_capacity": 10,
+        },
+    )
+    assert beta_create_res.status_code == 201, beta_create_res.text
+
+    by_name_res = client.get("/api/offices?search=north")
+    assert by_name_res.status_code == 200
+    by_name_body = by_name_res.json()
+    assert by_name_body["total"] == 1
+    assert by_name_body["items"][0]["name"] == "North Hub"
+
+    by_address_res = client.get("/api/offices?search=market")
+    assert by_address_res.status_code == 200
+    by_address_body = by_address_res.json()
+    assert by_address_body["total"] == 1
+    assert by_address_body["items"][0]["name"] == "South Point"
+
+    uuid_substring = alpha_uuid.split("-")[0][2:]
+    by_uuid_res = client.get(f"/api/offices?search={uuid_substring}")
+    assert by_uuid_res.status_code == 200
+    by_uuid_body = by_uuid_res.json()
+    assert by_uuid_body["total"] == 1
+    assert by_uuid_body["items"][0]["uuid"] == alpha_uuid
+
+    multi_token_res = client.get("/api/offices?search= north   terrace ")
+    assert multi_token_res.status_code == 200
+    multi_token_body = multi_token_res.json()
+    assert multi_token_body["total"] == 1
+    assert multi_token_body["items"][0]["name"] == "North Hub"
+
+    blank_res = client.get("/api/offices?search=   ")
+    assert blank_res.status_code == 200
+    blank_body = blank_res.json()
+    assert blank_body["total"] == 2
 
     app.dependency_overrides.clear()

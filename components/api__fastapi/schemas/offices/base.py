@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from components.api__fastapi.schemas.common.pagination import PaginatedResponse
+
 
 class OfficeCreate(BaseModel):
     name: str = Field(min_length=2)
@@ -35,23 +37,4 @@ class OfficeRead(BaseModel):
     updated_at: datetime
 
 
-class PaginationMeta(BaseModel):
-    page: int
-    page_size: int
-    total: int
-
-
-class SortMeta(BaseModel):
-    field: str
-    order: Literal["asc", "desc"]
-
-
-class ListMeta(BaseModel):
-    pagination: PaginationMeta
-    filters: dict[str, str] | None
-    sort: SortMeta
-
-
-class OfficeListResponse(BaseModel):
-    data: list[OfficeRead]
-    meta: ListMeta
+OfficeListResponse = PaginatedResponse[OfficeRead]
