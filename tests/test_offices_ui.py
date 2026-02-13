@@ -204,3 +204,69 @@ def test_offices_ui_sorting_behaviour_and_params_preserved() -> None:
     assert "page=1&page_size=5&search=Alpha&sort=name&order=desc" in preserved_params_res.text
 
     app.dependency_overrides.clear()
+
+
+def test_offices_ui_search_multi_field_and_multi_token() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    with Session(engine) as session:
+        north_office = OfficeModel(
+            name="North Hub",
+            address="742 Evergreen Terrace",
+            lat=35.0,
+            lng=139.0,
+            storage_capacity=10,
+        )
+        south_office = OfficeModel(
+            name="South Point",
+            address="100 Market Street",
+            lat=35.0,
+            lng=139.0,
+            storage_capacity=10,
+        )
+        session.add(north_office)
+        session.add(south_office)
+        session.commit()
+        session.refresh(north_office)
+
+        north_uuid = north_office.uuid
+
+    by_name_res = client.get("/offices?search=north", headers={"HX-Request": "true"})
+    assert by_name_res.status_code == 200
+    assert "North Hub" in by_name_res.text
+    assert "South Point" not in by_name_res.text
+
+    by_address_res = client.get("/offices?search=market", headers={"HX-Request": "true"})
+    assert by_address_res.status_code == 200
+    assert "South Point" in by_address_res.text
+    assert "North Hub" not in by_address_res.text
+
+    uuid_substring = north_uuid.split("-")[0][2:]
+    by_uuid_res = client.get(f"/offices?search={uuid_substring}", headers={"HX-Request": "true"})
+    assert by_uuid_res.status_code == 200
+    assert "North Hub" in by_uuid_res.text
+    assert "South Point" not in by_uuid_res.text
+
+    multi_token_res = client.get("/offices?search= north   terrace ", headers={"HX-Request": "true"})
+    assert multi_token_res.status_code == 200
+    assert "North Hub" in multi_token_res.text
+    assert "South Point" not in multi_token_res.text
+
+    blank_res = client.get("/offices?search=   ", headers={"HX-Request": "true"})
+    assert blank_res.status_code == 200
+    assert "North Hub" in blank_res.text
+    assert "South Point" in blank_res.text
+
+    app.dependency_overrides.clear()
