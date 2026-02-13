@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title or "Bokkapro Platform" }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  </head>
+  <body class="bg-slate-100 text-slate-900 min-h-screen">
+    <header class="bg-slate-900 text-white">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/" class="font-semibold text-lg">Bokkapro Platform</a>
+        <nav class="space-x-4 text-sm">
+          <a class="hover:underline" href="/">Dashboard</a>
+          <a class="hover:underline" href="/ui/offices">Offices</a>
+          <a class="hover:underline" href="/ui/vehicles">Vehicles</a>
+          <a class="hover:underline" href="/ui/crews">Crews</a>
+          <a class="hover:underline" href="/ui/tasks">Tasks</a>
+          <a class="hover:underline" href="/ui/routes">Routes</a>
+        </nav>
+      </div>
+    </header>
+    <main class="max-w-6xl mx-auto px-4 py-8">
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>
