@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query
 
 from components.api__fastapi.dependencies import get_office_repository
@@ -7,6 +9,10 @@ from components.app__office.use_cases.list_offices import list_offices
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 
 router = APIRouter()
+
+OFFICE_ALLOWED_SORT_FIELDS = ("id", "name", "created_at", "updated_at")
+DEFAULT_SORT_FIELD = "created_at"
+DEFAULT_SORT_ORDER: Literal["asc", "desc"] = "desc"
 
 
 @router.get("/offices", response_model=OfficeListResponse)

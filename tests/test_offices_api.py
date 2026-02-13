@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from time import sleep
 
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
@@ -8,7 +9,7 @@ from bases.platform.db import get_session
 from main import app
 
 
-def test_office_crud_flow() -> None:
+def _build_client() -> TestClient:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -21,7 +22,11 @@ def test_office_crud_flow() -> None:
             yield session
 
     app.dependency_overrides[get_session] = _session_override
-    client = TestClient(app)
+    return TestClient(app)
+
+
+def test_office_crud_flow() -> None:
+    client = _build_client()
 
     create_res = client.post(
         "/api/offices",

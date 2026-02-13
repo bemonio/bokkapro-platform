@@ -5,7 +5,14 @@ from components.domain__office.entities import Office
 
 class OfficeRepository(ABC):
     @abstractmethod
-    def list(self, page: int, page_size: int, search: str | None) -> tuple[list[Office], int]:
+    def list(
+        self,
+        page: int,
+        page_size: int,
+        search: str | None,
+        sort: str,
+        order: str,
+    ) -> tuple[list[Office], int]:
         raise NotImplementedError
 
     @abstractmethod
