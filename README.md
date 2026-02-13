@@ -104,7 +104,7 @@ docker compose run --rm migrate
 ### Run tests
 
 ``` bash
-docker compose run --rm test
+docker compose --profile test run --rm test
 ```
 
 ### Stop the stack
@@ -132,7 +132,7 @@ Make targets are thin wrappers around Docker Compose commands:
   `make down`  `docker compose down`
   `make reset` `docker compose down -v && rm -f storage/app.db`
   `make migrate` `docker compose run --rm migrate`
-  `make test`  `docker compose run --rm test`
+  `make test`  `docker compose --profile test run --rm test`
 
 ------------------------------------------------------------------------
 
