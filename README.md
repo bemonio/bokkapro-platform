@@ -36,6 +36,7 @@ preparing for Stage 2 --- real optimization with OR‑Tools.
   ORM            SQLModel
   Migrations     Alembic
   Database       SQLite (dev) → PostgreSQL (prod)
+  Runtime        Docker + Docker Compose (primary)
   UI             Jinja2 + HTMX + Alpine.js + TailwindCSS
   Architecture   Clean Architecture + Polylith
 
@@ -59,62 +60,79 @@ preparing for Stage 2 --- real optimization with OR‑Tools.
       └── versions/
 
     main.py
+    Dockerfile
+    docker-compose.yml
     README.md
     Makefile
     requirements.txt
 
 ------------------------------------------------------------------------
 
-## 🛠️ Getting Started
+## 🐳 Docker-First Workflow (Primary)
 
 ### Prerequisites
 
--   Python 3.12+
--   Git
--   Docker & Docker Compose (optional)
+-   Docker
+-   Docker Compose
 
-### Install (Local Dev)
+### Database URL and persistence
+
+All services run with:
+
+-   `DATABASE_URL=sqlite:////app/storage/app.db`
+-   volume mount: `./storage:/app/storage`
+
+This keeps SQLite data persisted on the host under `storage/app.db`.
+
+### Run the stack
 
 ``` bash
-git clone https://github.com/bemonio/bokkapro-platform.git
-cd bokkapro-platform
+docker compose up --build
+```
 
-python3 -m venv .venv
-. .venv/bin/activate
+-   `migrate` runs first (`alembic upgrade head`)
+-   `app` starts only after `migrate` completes successfully
+-   API docs: <http://localhost:8000/docs>
+-   Health: <http://localhost:8000/health>
 
-pip install -r requirements.txt
+### Run migrations only
+
+``` bash
+docker compose run --rm migrate
+```
+
+### Run tests
+
+``` bash
+docker compose run --rm test
+```
+
+### Stop the stack
+
+``` bash
+docker compose down
+```
+
+### Reset local DB
+
+``` bash
+docker compose down -v
+rm -f storage/app.db
 ```
 
 ------------------------------------------------------------------------
 
-## 🧪 Development Scripts (Makefile)
+## 🧪 Makefile (Optional Shortcuts)
 
-  Command        Description
-  -------------- ----------------------
-  make up        Start FastAPI server
-  make migrate   Apply DB migrations
-  make reset     Reset database
-  make lint      Run ruff linter
-  make test      Run pytest tests
+Make targets are thin wrappers around Docker Compose commands:
 
-------------------------------------------------------------------------
-
-## 📡 API Documentation
-
-OpenAPI docs:\
-http://localhost:8000/docs
-
-Health endpoint:\
-http://localhost:8000/health
-
-------------------------------------------------------------------------
-
-## 🧩 UI Features
-
--   List view with pagination + search
--   Create/Edit modals
--   Soft delete support
--   HTMX dynamic updates
+  Command      Docker Compose equivalent
+  ------------ ----------------------------------------
+  `make up`    `docker compose up --build`
+  `make down`  `docker compose down`
+  `make reset` `docker compose down -v && rm -f storage/app.db`
+  `make migrate` `docker compose run --rm migrate`
+  `make test`  `docker compose run --rm test`
 
 ------------------------------------------------------------------------
 
