@@ -1,0 +1,63 @@
+<div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left">
+      <tr>
+        <th class="px-4 py-3">Name</th>
+        <th class="px-4 py-3">Address</th>
+        <th class="px-4 py-3">Coordinates</th>
+        <th class="px-4 py-3">Storage</th>
+        <th class="px-4 py-3 text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for office in offices %}
+      <tr class="border-t border-slate-200">
+        <td class="px-4 py-3 font-medium">{{ office.name }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ office.address or "—" }}</td>
+        <td class="px-4 py-3 text-slate-600">
+          {% if office.lat is not none and office.lng is not none %}
+            {{ office.lat }}, {{ office.lng }}
+          {% else %}
+            —
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-slate-600">{{ office.storage_capacity }}</td>
+        <td class="px-4 py-3">
+          <div class="flex gap-2 justify-end">
+            <a href="/ui/offices/{{ office.id }}" class="text-blue-700">View</a>
+            <a href="/ui/offices/{{ office.id }}/edit" class="text-slate-700">Edit</a>
+            <form method="post" action="/ui/offices/{{ office.id }}/delete" x-data>
+              <button type="submit" class="text-red-700" x-on:click.prevent="confirm('Delete this office?') && $el.closest('form').submit()">Delete</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="5" class="px-4 py-6 text-center text-slate-500">No offices found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="flex items-center justify-between text-sm mt-3">
+  <p class="text-slate-600">Total: {{ pagination.total }}</p>
+  <div class="flex items-center gap-2">
+    <a
+      class="px-3 py-1 border rounded {% if not pagination.has_prev %}pointer-events-none opacity-50{% endif %}"
+      href="/ui/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      hx-get="/ui/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      hx-target="#offices-table"
+      hx-push-url="true"
+    >Prev</a>
+    <span>Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
+    <a
+      class="px-3 py-1 border rounded {% if not pagination.has_next %}pointer-events-none opacity-50{% endif %}"
+      href="/ui/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      hx-get="/ui/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      hx-target="#offices-table"
+      hx-push-url="true"
+    >Next</a>
+  </div>
+</div>

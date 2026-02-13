@@ -1,0 +1,8 @@
+from fastapi import APIRouter
+
+from components.ui__server_rendered.routers.dashboard.get import router as dashboard_router
+from components.ui__server_rendered.routers.offices import router as offices_router
+
+router = APIRouter(tags=["ui"])
+router.include_router(dashboard_router)
+router.include_router(offices_router)
