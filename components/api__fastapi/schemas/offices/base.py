@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from components.api__fastapi.schemas.common.pagination import PaginatedResponse
+
 
 class OfficeCreate(BaseModel):
     name: str = Field(min_length=2)
@@ -34,8 +36,4 @@ class OfficeRead(BaseModel):
     updated_at: datetime
 
 
-class OfficeListResponse(BaseModel):
-    items: list[OfficeRead]
-    total: int
-    page: int
-    page_size: int
+OfficeListResponse = PaginatedResponse[OfficeRead]
