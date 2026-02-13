@@ -25,11 +25,11 @@
         <td class="px-4 py-3">
           <div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
             <a
-              href="/ui/offices/{{ office.id }}"
+              href="/offices/{{ office.id }}"
               class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
             >View</a>
             <a
-              href="/ui/offices/{{ office.id }}/edit"
+              href="/offices/{{ office.id }}/edit"
               class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >Edit</a>
             <button
@@ -38,7 +38,7 @@
               @click="openDeleteModal = true"
             >Delete</button>
 
-            <form method="post" action="/ui/offices/{{ office.id }}/delete" x-ref="deleteForm"></form>
+            <form method="post" action="/offices/{{ office.id }}/delete" x-ref="deleteForm"></form>
 
             <div
               x-show="openDeleteModal"
@@ -84,16 +84,16 @@
   <div class="flex items-center gap-2">
     <a
       class="px-3 py-1 border rounded {% if not pagination.has_prev %}pointer-events-none opacity-50{% endif %}"
-      href="/ui/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
-      hx-get="/ui/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      href="/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      hx-get="/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
       hx-target="#offices-table"
       hx-push-url="true"
     >Prev</a>
     <span>Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
     <a
       class="px-3 py-1 border rounded {% if not pagination.has_next %}pointer-events-none opacity-50{% endif %}"
-      href="/ui/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
-      hx-get="/ui/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      href="/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
+      hx-get="/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search }}"
       hx-target="#offices-table"
       hx-push-url="true"
     >Next</a>

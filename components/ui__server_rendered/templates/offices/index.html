@@ -3,14 +3,14 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold">Offices</h1>
-  <a href="/ui/offices/new" class="bg-slate-900 text-white text-sm px-4 py-2 rounded-md">New Office</a>
+  <a href="/offices/new" class="bg-slate-900 text-white text-sm px-4 py-2 rounded-md">New Office</a>
 </div>
 
 <form
   method="get"
-  action="/ui/offices"
+  action="/offices"
   class="mb-4"
-  hx-get="/ui/offices"
+  hx-get="/offices"
   hx-target="#offices-table"
   hx-push-url="true"
 >
@@ -22,7 +22,7 @@
       placeholder="Search offices..."
       class="w-full rounded-md border border-slate-300 px-3 py-2"
       hx-trigger="keyup changed delay:300ms, search"
-      hx-get="/ui/offices"
+      hx-get="/offices"
       hx-target="#offices-table"
       hx-include="closest form"
       hx-push-url="true"

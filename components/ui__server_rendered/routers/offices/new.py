@@ -20,7 +20,7 @@ def new_office_form(request: Request, templates: Jinja2Templates = Depends(get_t
             "request": request,
             "title": "New Office",
             "mode": "create",
-            "form_action": "/ui/offices/new",
+            "form_action": "/offices/new",
             "values": {"name": "", "address": "", "lat": "", "lng": "", "storage_capacity": "0"},
             "errors": {},
         },
@@ -43,7 +43,7 @@ async def create_office_ui(
                 "request": request,
                 "title": "New Office",
                 "mode": "create",
-                "form_action": "/ui/offices/new",
+                "form_action": "/offices/new",
                 "values": values,
                 "errors": errors,
             },
@@ -58,4 +58,4 @@ async def create_office_ui(
         lng=payload.lng,
         storage_capacity=payload.storage_capacity,
     )
-    return RedirectResponse(url="/ui/offices", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/offices", status_code=status.HTTP_303_SEE_OTHER)
