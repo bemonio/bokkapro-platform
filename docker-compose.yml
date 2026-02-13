@@ -1,0 +1,32 @@
+services:
+  migrate:
+    build: .
+    working_dir: /app
+    environment:
+      DATABASE_URL: sqlite:////app/storage/app.db
+    volumes:
+      - ./storage:/app/storage
+    command: alembic upgrade head
+
+  app:
+    build: .
+    working_dir: /app
+    environment:
+      DATABASE_URL: sqlite:////app/storage/app.db
+    volumes:
+      - ./storage:/app/storage
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  test:
+    build: .
+    working_dir: /app
+    environment:
+      DATABASE_URL: sqlite:////app/storage/app.db
+    volumes:
+      - ./storage:/app/storage
+    command: pytest
