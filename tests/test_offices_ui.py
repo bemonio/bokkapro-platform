@@ -5,6 +5,7 @@ from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel, Session, create_engine
 
 from bases.platform.db import get_session
+from components.persistence__sqlmodel.models.office import OfficeModel
 from main import app
 
 
@@ -75,5 +76,46 @@ def test_offices_ui_crud_and_htmx_partial() -> None:
 
     after_delete_res = client.get("/ui/offices")
     assert "No offices found" in after_delete_res.text
+
+    app.dependency_overrides.clear()
+
+
+def test_offices_ui_list_route_no_redirect_and_query_params_preserved() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    with Session(engine) as session:
+        session.add(OfficeModel(name="Alpha", address="Alpha Ave", lat=40.0, lng=-73.0, storage_capacity=10))
+        session.add(OfficeModel(name="Beta", address="Beta Ave", lat=40.0, lng=-73.0, storage_capacity=10))
+        session.commit()
+
+    canonical_res = client.get(
+        "/ui/offices?page=1&page_size=1&search=Alpha",
+        headers={"HX-Request": "true"},
+        follow_redirects=False,
+    )
+    assert canonical_res.status_code == 200
+    assert "Alpha" in canonical_res.text
+    assert "Beta" not in canonical_res.text
+
+    trailing_res = client.get(
+        "/ui/offices/?page=1&page_size=1&search=Alpha",
+        headers={"HX-Request": "true"},
+        follow_redirects=False,
+    )
+    assert trailing_res.status_code == 200
+    assert "Alpha" in trailing_res.text
+    assert "Beta" not in trailing_res.text
 
     app.dependency_overrides.clear()
