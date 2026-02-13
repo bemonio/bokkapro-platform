@@ -23,12 +23,50 @@
         </td>
         <td class="px-4 py-3 text-slate-600">{{ office.storage_capacity }}</td>
         <td class="px-4 py-3">
-          <div class="flex gap-2 justify-end">
-            <a href="/ui/offices/{{ office.id }}" class="text-blue-700">View</a>
-            <a href="/ui/offices/{{ office.id }}/edit" class="text-slate-700">Edit</a>
-            <form method="post" action="/ui/offices/{{ office.id }}/delete" x-data>
-              <button type="submit" class="text-red-700" x-on:click.prevent="confirm('Delete this office?') && $el.closest('form').submit()">Delete</button>
-            </form>
+          <div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
+            <a
+              href="/ui/offices/{{ office.id }}"
+              class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+            >View</a>
+            <a
+              href="/ui/offices/{{ office.id }}/edit"
+              class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            >Edit</a>
+            <button
+              type="button"
+              class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
+              @click="openDeleteModal = true"
+            >Delete</button>
+
+            <form method="post" action="/ui/offices/{{ office.id }}/delete" x-ref="deleteForm"></form>
+
+            <div
+              x-show="openDeleteModal"
+              class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+              @click.self="openDeleteModal = false"
+            >
+              <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
+                <div class="border-b border-slate-200 px-5 py-4">
+                  <h3 class="text-base font-semibold text-slate-900">Delete Office</h3>
+                </div>
+                <div class="px-5 py-4 text-sm text-slate-700">
+                  Are you sure you want to delete <span class="font-semibold text-slate-900">{{ office.name }}</span>?
+                  This action cannot be undone.
+                </div>
+                <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+                  <button
+                    type="button"
+                    class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    @click="openDeleteModal = false"
+                  >Cancel</button>
+                  <button
+                    type="button"
+                    class="inline-flex items-center rounded-md border border-red-600 bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                    @click="$refs.deleteForm.submit()"
+                  >Delete</button>
+                </div>
+              </div>
+            </div>
           </div>
         </td>
       </tr>
