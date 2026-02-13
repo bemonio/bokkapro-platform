@@ -19,4 +19,4 @@ def delete_office_ui(
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    return RedirectResponse(url="/ui/offices", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/offices", status_code=status.HTTP_303_SEE_OTHER)

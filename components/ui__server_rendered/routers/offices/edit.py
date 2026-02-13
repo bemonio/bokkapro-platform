@@ -32,7 +32,7 @@ def edit_office_form(
             "request": request,
             "title": f"Edit Office #{office.id}",
             "mode": "edit",
-            "form_action": f"/ui/offices/{office.id}/edit",
+            "form_action": f"/offices/{office.id}/edit",
             "values": {
                 "name": office.name,
                 "address": office.address or "",
@@ -70,7 +70,7 @@ async def edit_office_ui(
                 "request": request,
                 "title": f"Edit Office #{office_id}",
                 "mode": "edit",
-                "form_action": f"/ui/offices/{office_id}/edit",
+                "form_action": f"/offices/{office_id}/edit",
                 "values": values,
                 "errors": errors,
             },
@@ -87,4 +87,4 @@ async def edit_office_ui(
         storage_capacity=payload.storage_capacity,
     )
 
-    return RedirectResponse(url="/ui/offices", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url="/offices", status_code=status.HTTP_303_SEE_OTHER)

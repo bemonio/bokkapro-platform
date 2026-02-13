@@ -6,7 +6,7 @@ from components.api__fastapi.routers.offices.get import router as get_router
 from components.api__fastapi.routers.offices.list import router as list_router
 from components.api__fastapi.routers.offices.update import router as update_router
 
-router = APIRouter(tags=["offices"])
+router = APIRouter(prefix="/api", tags=["offices"])
 router.include_router(list_router)
 router.include_router(get_router)
 router.include_router(create_router)

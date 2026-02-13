@@ -28,11 +28,11 @@ def test_offices_ui_crud_and_htmx_partial() -> None:
     assert dashboard_res.status_code == 200
     assert "Dashboard" in dashboard_res.text
 
-    create_page_res = client.get("/ui/offices/new")
+    create_page_res = client.get("/offices/new")
     assert create_page_res.status_code == 200
 
     create_res = client.post(
-        "/ui/offices/new",
+        "/offices/new",
         data={
             "name": "Central",
             "address": "100 Main St",
@@ -44,17 +44,17 @@ def test_offices_ui_crud_and_htmx_partial() -> None:
     )
     assert create_res.status_code == 303
 
-    list_res = client.get("/ui/offices")
+    list_res = client.get("/offices")
     assert list_res.status_code == 200
     assert "Central" in list_res.text
 
-    search_partial_res = client.get("/ui/offices?search=Central", headers={"HX-Request": "true"})
+    search_partial_res = client.get("/offices?search=Central", headers={"HX-Request": "true"})
     assert search_partial_res.status_code == 200
     assert "<table" in search_partial_res.text
     assert "<html" not in search_partial_res.text
 
     edit_res = client.post(
-        "/ui/offices/1/edit",
+        "/offices/1/edit",
         data={
             "name": "Central Updated",
             "address": "100 Main St",
@@ -66,15 +66,15 @@ def test_offices_ui_crud_and_htmx_partial() -> None:
     )
     assert edit_res.status_code == 303
 
-    view_res = client.get("/ui/offices/1")
+    view_res = client.get("/offices/1")
     assert view_res.status_code == 200
     assert "Central Updated" in view_res.text
     assert "disabled" in view_res.text
 
-    delete_res = client.post("/ui/offices/1/delete", follow_redirects=False)
+    delete_res = client.post("/offices/1/delete", follow_redirects=False)
     assert delete_res.status_code == 303
 
-    after_delete_res = client.get("/ui/offices")
+    after_delete_res = client.get("/offices")
     assert "No offices found" in after_delete_res.text
 
     app.dependency_overrides.clear()
@@ -101,7 +101,7 @@ def test_offices_ui_list_route_no_redirect_and_query_params_preserved() -> None:
         session.commit()
 
     canonical_res = client.get(
-        "/ui/offices?page=1&page_size=1&search=Alpha",
+        "/offices?page=1&page_size=1&search=Alpha",
         headers={"HX-Request": "true"},
         follow_redirects=False,
     )
@@ -110,7 +110,7 @@ def test_offices_ui_list_route_no_redirect_and_query_params_preserved() -> None:
     assert "Beta" not in canonical_res.text
 
     trailing_res = client.get(
-        "/ui/offices/?page=1&page_size=1&search=Alpha",
+        "/offices/?page=1&page_size=1&search=Alpha",
         headers={"HX-Request": "true"},
         follow_redirects=False,
     )
