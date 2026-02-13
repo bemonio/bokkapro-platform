@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.templating import Jinja2Templates
 
@@ -17,6 +19,8 @@ def list_offices_ui(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
     search: str | None = Query(default=None),
+    sort: Literal["name", "created_at", "updated_at"] = Query(default="created_at"),
+    order: Literal["asc", "desc"] = Query(default="desc"),
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     templates: Jinja2Templates = Depends(get_templates),
 ):
@@ -25,14 +29,16 @@ def list_offices_ui(
         page=page,
         page_size=page_size,
         search=search,
-        sort="created_at",
-        order="desc",
+        sort=sort,
+        order=order,
     )
     context = {
         "request": request,
         "title": "Offices",
         "offices": items,
         "search": search or "",
+        "sort": sort,
+        "order": order,
         "pagination": build_pagination(page=page, page_size=page_size, total=total),
     }
 
