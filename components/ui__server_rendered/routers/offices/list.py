@@ -10,7 +10,7 @@ from components.ui__server_rendered.routers.offices._helpers import build_pagina
 router = APIRouter()
 
 
-@router.get("")
+@router.get("/")
 def list_offices_ui(
     request: Request,
     page: int = Query(default=1, ge=1),
