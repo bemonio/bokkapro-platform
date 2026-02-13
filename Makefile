@@ -13,4 +13,4 @@ migrate:
 	docker compose run --rm migrate
 
 test:
-	docker compose run --rm test
+	docker compose --profile test run --rm test
