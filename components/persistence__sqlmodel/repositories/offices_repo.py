@@ -58,9 +58,9 @@ class OfficeRepositorySqlModel(OfficeRepository):
         stmt = select(OfficeModel).where(OfficeModel.deleted_at.is_(None))
         count_stmt = select(func.count()).select_from(OfficeModel).where(OfficeModel.deleted_at.is_(None))
 
-        normalized_search = search.strip() if search is not None else None
+        normalized_search = " ".join(search.split()) if search is not None else None
         if normalized_search:
-            tokens = normalized_search.split()
+            tokens = normalized_search.split(" ")
             for token in tokens:
                 term = f"%{token}%"
                 token_clause = or_(

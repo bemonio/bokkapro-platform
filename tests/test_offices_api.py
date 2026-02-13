@@ -146,31 +146,31 @@ def test_offices_api_search_multi_field_and_multi_token() -> None:
     by_name_res = client.get("/api/offices?search=north")
     assert by_name_res.status_code == 200
     by_name_body = by_name_res.json()
-    assert by_name_body["total"] == 1
-    assert by_name_body["items"][0]["name"] == "North Hub"
+    assert by_name_body["meta"]["pagination"]["total"] == 1
+    assert by_name_body["data"][0]["name"] == "North Hub"
 
     by_address_res = client.get("/api/offices?search=market")
     assert by_address_res.status_code == 200
     by_address_body = by_address_res.json()
-    assert by_address_body["total"] == 1
-    assert by_address_body["items"][0]["name"] == "South Point"
+    assert by_address_body["meta"]["pagination"]["total"] == 1
+    assert by_address_body["data"][0]["name"] == "South Point"
 
     uuid_substring = alpha_uuid.split("-")[0][2:]
     by_uuid_res = client.get(f"/api/offices?search={uuid_substring}")
     assert by_uuid_res.status_code == 200
     by_uuid_body = by_uuid_res.json()
-    assert by_uuid_body["total"] == 1
-    assert by_uuid_body["items"][0]["uuid"] == alpha_uuid
+    assert by_uuid_body["meta"]["pagination"]["total"] == 1
+    assert by_uuid_body["data"][0]["uuid"] == alpha_uuid
 
     multi_token_res = client.get("/api/offices?search= north   terrace ")
     assert multi_token_res.status_code == 200
     multi_token_body = multi_token_res.json()
-    assert multi_token_body["total"] == 1
-    assert multi_token_body["items"][0]["name"] == "North Hub"
+    assert multi_token_body["meta"]["pagination"]["total"] == 1
+    assert multi_token_body["data"][0]["name"] == "North Hub"
 
     blank_res = client.get("/api/offices?search=   ")
     assert blank_res.status_code == 200
     blank_body = blank_res.json()
-    assert blank_body["total"] == 2
+    assert blank_body["meta"]["pagination"]["total"] == 2
 
     app.dependency_overrides.clear()
