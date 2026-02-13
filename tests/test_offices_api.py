@@ -65,3 +65,76 @@ def test_office_crud_flow() -> None:
     assert list_deleted_res.json()["total"] == 0
 
     app.dependency_overrides.clear()
+
+
+def test_offices_api_search_multi_field_and_multi_token() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    alpha_create_res = client.post(
+        "/api/offices",
+        json={
+            "name": "North Hub",
+            "address": "742 Evergreen Terrace",
+            "lat": 35.0,
+            "lng": 139.0,
+            "storage_capacity": 10,
+        },
+    )
+    assert alpha_create_res.status_code == 201, alpha_create_res.text
+    alpha_uuid = alpha_create_res.json()["uuid"]
+
+    beta_create_res = client.post(
+        "/api/offices",
+        json={
+            "name": "South Point",
+            "address": "100 Market Street",
+            "lat": 35.0,
+            "lng": 139.0,
+            "storage_capacity": 10,
+        },
+    )
+    assert beta_create_res.status_code == 201, beta_create_res.text
+
+    by_name_res = client.get("/api/offices?search=north")
+    assert by_name_res.status_code == 200
+    by_name_body = by_name_res.json()
+    assert by_name_body["total"] == 1
+    assert by_name_body["items"][0]["name"] == "North Hub"
+
+    by_address_res = client.get("/api/offices?search=market")
+    assert by_address_res.status_code == 200
+    by_address_body = by_address_res.json()
+    assert by_address_body["total"] == 1
+    assert by_address_body["items"][0]["name"] == "South Point"
+
+    uuid_substring = alpha_uuid.split("-")[0][2:]
+    by_uuid_res = client.get(f"/api/offices?search={uuid_substring}")
+    assert by_uuid_res.status_code == 200
+    by_uuid_body = by_uuid_res.json()
+    assert by_uuid_body["total"] == 1
+    assert by_uuid_body["items"][0]["uuid"] == alpha_uuid
+
+    multi_token_res = client.get("/api/offices?search= north   terrace ")
+    assert multi_token_res.status_code == 200
+    multi_token_body = multi_token_res.json()
+    assert multi_token_body["total"] == 1
+    assert multi_token_body["items"][0]["name"] == "North Hub"
+
+    blank_res = client.get("/api/offices?search=   ")
+    assert blank_res.status_code == 200
+    blank_body = blank_res.json()
+    assert blank_body["total"] == 2
+
+    app.dependency_overrides.clear()
