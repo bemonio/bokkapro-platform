@@ -20,7 +20,14 @@ def list_offices_ui(
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     templates: Jinja2Templates = Depends(get_templates),
 ):
-    items, total = list_offices(repository=repository, page=page, page_size=page_size, search=search)
+    items, total = list_offices(
+        repository=repository,
+        page=page,
+        page_size=page_size,
+        search=search,
+        sort="created_at",
+        order="desc",
+    )
     context = {
         "request": request,
         "title": "Offices",

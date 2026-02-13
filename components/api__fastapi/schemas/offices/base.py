@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,8 +35,23 @@ class OfficeRead(BaseModel):
     updated_at: datetime
 
 
-class OfficeListResponse(BaseModel):
-    items: list[OfficeRead]
-    total: int
+class PaginationMeta(BaseModel):
     page: int
     page_size: int
+    total: int
+
+
+class SortMeta(BaseModel):
+    field: str
+    order: Literal["asc", "desc"]
+
+
+class ListMeta(BaseModel):
+    pagination: PaginationMeta
+    filters: dict[str, str] | None
+    sort: SortMeta
+
+
+class OfficeListResponse(BaseModel):
+    data: list[OfficeRead]
+    meta: ListMeta

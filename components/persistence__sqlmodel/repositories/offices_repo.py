@@ -3,6 +3,14 @@ from sqlmodel import Session, func, or_, select
 from components.app__office.ports import OfficeRepository
 from components.domain__office.entities import Office
 from components.persistence__sqlmodel.models.office import OfficeModel
+from components.persistence__sqlmodel.repositories.shared.sorting import apply_sorting
+
+OFFICE_SORT_FIELDS = {
+    "id": OfficeModel.id,
+    "name": OfficeModel.name,
+    "created_at": OfficeModel.created_at,
+    "updated_at": OfficeModel.updated_at,
+}
 
 
 class OfficeRepositorySqlModel(OfficeRepository):
@@ -39,7 +47,14 @@ class OfficeRepositorySqlModel(OfficeRepository):
             deleted_at=entity.deleted_at,
         )
 
-    def list(self, page: int, page_size: int, search: str | None) -> tuple[list[Office], int]:
+    def list(
+        self,
+        page: int,
+        page_size: int,
+        search: str | None,
+        sort: str,
+        order: str,
+    ) -> tuple[list[Office], int]:
         stmt = select(OfficeModel).where(OfficeModel.deleted_at.is_(None))
         count_stmt = select(func.count()).select_from(OfficeModel).where(OfficeModel.deleted_at.is_(None))
 
@@ -49,6 +64,12 @@ class OfficeRepositorySqlModel(OfficeRepository):
             stmt = stmt.where(search_clause)
             count_stmt = count_stmt.where(search_clause)
 
+        stmt = apply_sorting(
+            stmt,
+            sort=sort,
+            order=order,
+            allowed_fields=OFFICE_SORT_FIELDS,
+        )
         stmt = stmt.offset((page - 1) * page_size).limit(page_size)
         models = self.session.exec(stmt).all()
         total = self.session.exec(count_stmt).one()
