@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_task_repository
 from components.app__office.use_cases.get_office import get_office
+from components.app__office.use_cases.list_offices import list_offices
 from components.app__task.use_cases.get_task import get_task
 from components.app__task.use_cases.update_task import update_task
 from components.domain__office.errors import OfficeNotFoundError
@@ -50,7 +51,7 @@ def edit_task_form(
             "mode": "edit",
             "entity_uuid": task.uuid,
             "form_action": f"/tasks/{task.uuid}/edit",
-            "values": {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]},
+            "values": values,
             "errors": {},
             "lang": lang,
         },
@@ -62,6 +63,7 @@ async def edit_task_ui(
     task_uuid: str,
     request: Request,
     repository: TaskRepositorySqlModel = Depends(get_task_repository),
+    office_repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
