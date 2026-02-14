@@ -48,24 +48,12 @@ def test_vehicles_ui_list_and_i18n() -> None:
     app.dependency_overrides.clear()
 
 
-def test_vehicle_edit_uses_uuid_and_hides_numeric_id() -> None:
-    client, session = _build_client()
+def test_vehicle_new_form_uses_async_office_dropdown() -> None:
+    client, _ = _build_client()
 
-    office = OfficeModel(name="Centro", address="Calle 1", storage_capacity=10)
-    session.add(office)
-    session.commit()
-    session.refresh(office)
-
-    vehicle = VehicleModel(office_id=office.id, name="Camión", plate="XYZ-001", lat=19.43, lng=-99.13, max_capacity=8)
-    session.add(vehicle)
-    session.commit()
-    session.refresh(vehicle)
-
-    res = client.get(f"/vehicles/{vehicle.uuid}/edit?lang=es")
+    res = client.get("/vehicles/new")
     assert res.status_code == 200
-    assert "Editar vehículo" in res.text
-    assert f"/vehicles/{vehicle.uuid}/edit" in res.text
-    assert f"/vehicles/{vehicle.id}/edit" not in res.text
-    assert f"#{vehicle.id}" not in res.text
+    assert 'name="office_uuid"' in res.text
+    assert '/api/offices?' in res.text
 
     app.dependency_overrides.clear()

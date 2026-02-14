@@ -14,6 +14,8 @@ TRANSLATIONS = {
             "language": "Language",
             "spanish": "Español",
             "english": "English",
+            "loading": "Loading...",
+            "no_results": "No results",
         },
         "menu": {
             "dashboard": "Dashboard",
@@ -55,6 +57,7 @@ TRANSLATIONS = {
             "form_new_title": "New Vehicle",
             "select_office": "Select an office",
             "search_office_placeholder": "Search office...",
+            "office_not_found": "Please select a valid office.",
         },
         "offices": {
             "title": "Offices",
@@ -142,6 +145,8 @@ TRANSLATIONS = {
             "language": "Idioma",
             "spanish": "Español",
             "english": "Inglés",
+            "loading": "Cargando...",
+            "no_results": "Sin resultados",
         },
         "menu": {
             "dashboard": "Panel",
@@ -183,6 +188,7 @@ TRANSLATIONS = {
             "form_new_title": "Nuevo vehículo",
             "select_office": "Selecciona una oficina",
             "search_office_placeholder": "Buscar oficina...",
+            "office_not_found": "Selecciona una oficina válida.",
         },
         "offices": {
             "title": "Oficinas",
