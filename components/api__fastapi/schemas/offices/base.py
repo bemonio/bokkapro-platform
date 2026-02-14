@@ -25,7 +25,6 @@ class OfficeUpdate(BaseModel):
 class OfficeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
     uuid: str
     tenant_id: str | None
     name: str

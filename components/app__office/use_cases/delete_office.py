@@ -3,10 +3,10 @@ from components.app__office.ports import OfficeRepository
 from components.domain__office.errors import OfficeNotFoundError
 
 
-def delete_office(repository: OfficeRepository, office_id: int) -> None:
-    office = repository.get(office_id)
+def delete_office(repository: OfficeRepository, office_uuid: str | int) -> None:
+    office = repository.get(office_uuid) if isinstance(office_uuid, int) else repository.get_by_uuid(office_uuid)
     if office is None:
-        raise OfficeNotFoundError(f"Office {office_id} not found")
+        raise OfficeNotFoundError(f"Office {office_uuid} not found")
 
     now = utc_now()
     office.deleted_at = now

@@ -39,7 +39,8 @@ def test_office_crud_flow() -> None:
         },
     )
     assert create_res.status_code == 201, create_res.text
-    office_id = create_res.json()["id"]
+    office_uuid = create_res.json()["uuid"]
+    assert "id" not in create_res.json()
 
     list_res = client.get("/api/offices")
     assert list_res.status_code == 200
@@ -53,23 +54,25 @@ def test_office_crud_flow() -> None:
     assert list_body["meta"]["filters"] is None
     assert list_body["meta"]["sort"] is None
     assert len(list_body["data"]) == 1
+    assert "id" not in list_body["data"][0]
 
-    get_res = client.get(f"/api/offices/{office_id}")
+    get_res = client.get(f"/api/offices/{office_uuid}")
     assert get_res.status_code == 200
     assert get_res.json()["name"] == "HQ"
 
     update_res = client.put(
-        f"/api/offices/{office_id}",
+        f"/api/offices/{office_uuid}",
         json={"name": "HQ Updated", "storage_capacity": 20},
     )
     assert update_res.status_code == 200
     assert update_res.json()["name"] == "HQ Updated"
     assert update_res.json()["storage_capacity"] == 20
+    assert "id" not in update_res.json()
 
-    delete_res = client.delete(f"/api/offices/{office_id}")
+    delete_res = client.delete(f"/api/offices/{office_uuid}")
     assert delete_res.status_code == 204
 
-    get_deleted_res = client.get(f"/api/offices/{office_id}")
+    get_deleted_res = client.get(f"/api/offices/{office_uuid}")
     assert get_deleted_res.status_code == 404
 
     list_deleted_res = client.get("/api/offices")
@@ -184,6 +187,7 @@ def test_offices_api_search_multi_field_and_phrase() -> None:
     by_name_body = by_name_res.json()
     assert by_name_body["meta"]["pagination"]["total"] == 1
     assert by_name_body["data"][0]["name"] == "North Hub"
+    assert "id" not in by_name_body["data"][0]
 
     by_address_res = client.get("/api/offices?search=market")
     assert by_address_res.status_code == 200

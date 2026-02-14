@@ -8,13 +8,13 @@ from components.persistence__sqlmodel.repositories.offices_repo import OfficeRep
 router = APIRouter()
 
 
-@router.delete("/offices/{office_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/offices/{office_uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_office_endpoint(
-    office_id: int,
+    office_uuid: str,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
 ) -> Response:
     try:
-        delete_office(repository=repository, office_id=office_id)
+        delete_office(repository=repository, office_uuid=office_uuid)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

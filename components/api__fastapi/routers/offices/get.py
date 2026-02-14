@@ -9,13 +9,13 @@ from components.persistence__sqlmodel.repositories.offices_repo import OfficeRep
 router = APIRouter()
 
 
-@router.get("/offices/{office_id}", response_model=OfficeRead)
+@router.get("/offices/{office_uuid}", response_model=OfficeRead)
 def get_office_endpoint(
-    office_id: int,
+    office_uuid: str,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
 ) -> OfficeRead:
     try:
-        office = get_office(repository=repository, office_id=office_id)
+        office = get_office(repository=repository, office_uuid=office_uuid)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

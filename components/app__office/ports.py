@@ -20,6 +20,10 @@ class OfficeRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def get_by_uuid(self, office_uuid: str) -> Office | None:
+        raise NotImplementedError
+
+    @abstractmethod
     def create(self, office: Office) -> Office:
         raise NotImplementedError
 
