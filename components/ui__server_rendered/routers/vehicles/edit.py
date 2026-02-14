@@ -31,6 +31,7 @@ def edit_vehicle_form(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
+    office_options = [{"id": office.id, "name": office.name} for office in offices]
     return templates.TemplateResponse(
         request=request,
         name="vehicles/form.html",
@@ -43,10 +44,13 @@ def edit_vehicle_form(
                 "office_id": str(vehicle.office_id),
                 "name": vehicle.name,
                 "plate": vehicle.plate or "",
+                "lat": "" if vehicle.lat is None else str(vehicle.lat),
+                "lng": "" if vehicle.lng is None else str(vehicle.lng),
                 "max_capacity": str(vehicle.max_capacity),
             },
             "errors": {},
             "offices": offices,
+            "office_options": office_options,
             "lang": lang,
         },
     )
@@ -62,6 +66,7 @@ async def edit_vehicle_ui(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
+    office_options = [{"id": office.id, "name": office.name} for office in offices]
     try:
         get_vehicle(repository=repository, vehicle_uuid=vehicle_id)
     except VehicleNotFoundError as exc:
@@ -81,6 +86,7 @@ async def edit_vehicle_ui(
                 "values": values,
                 "errors": errors,
                 "offices": offices,
+                "office_options": office_options,
                 "lang": lang,
             },
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -92,6 +98,8 @@ async def edit_vehicle_ui(
         office_id=payload.office_id,
         name=payload.name,
         plate=payload.plate,
+        lat=payload.lat,
+        lng=payload.lng,
         max_capacity=payload.max_capacity,
     )
     return RedirectResponse(url=f"/vehicles/{vehicle.id}?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)

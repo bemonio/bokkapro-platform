@@ -34,7 +34,7 @@ def test_vehicles_ui_list_and_i18n() -> None:
     session.commit()
     session.refresh(office)
 
-    session.add(VehicleModel(office_id=office.id, name="Camión", plate="XYZ-001", max_capacity=8))
+    session.add(VehicleModel(office_id=office.id, name="Camión", plate="XYZ-001", lat=19.43, lng=-99.13, max_capacity=8))
     session.commit()
 
     res = client.get("/vehicles?lang=es")
@@ -42,6 +42,7 @@ def test_vehicles_ui_list_and_i18n() -> None:
     assert "Vehículos" in res.text
     assert "Camión" in res.text
     assert "Oficina" in res.text
+    assert "Centro" in res.text
     assert "lang=es" in res.text
 
     app.dependency_overrides.clear()

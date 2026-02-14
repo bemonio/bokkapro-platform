@@ -23,6 +23,8 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[VehicleCreate | None
         "office_id": form_data.get("office_id"),
         "name": (form_data.get("name") or "").strip(),
         "plate": (form_data.get("plate") or "").strip() or None,
+        "lat": _as_float_or_none(form_data.get("lat")),
+        "lng": _as_float_or_none(form_data.get("lng")),
         "max_capacity": form_data.get("max_capacity"),
     }
     values = {k: "" if v is None else str(v) for k, v in payload.items()}
@@ -38,12 +40,16 @@ def update_from_form(form_data: Mapping[str, str]) -> tuple[VehicleUpdate | None
         "office_id": _as_int_or_none(form_data.get("office_id")),
         "name": (form_data.get("name") or "").strip() or None,
         "plate": (form_data.get("plate") or "").strip() or None,
+        "lat": _as_float_or_none(form_data.get("lat")),
+        "lng": _as_float_or_none(form_data.get("lng")),
         "max_capacity": _as_int_or_none(form_data.get("max_capacity")),
     }
     values = {
         "office_id": "" if payload["office_id"] is None else str(payload["office_id"]),
         "name": "" if payload["name"] is None else str(payload["name"]),
         "plate": "" if payload["plate"] is None else str(payload["plate"]),
+        "lat": "" if payload["lat"] is None else str(payload["lat"]),
+        "lng": "" if payload["lng"] is None else str(payload["lng"]),
         "max_capacity": "" if payload["max_capacity"] is None else str(payload["max_capacity"]),
     }
 
@@ -58,5 +64,14 @@ def _as_int_or_none(value: str | None) -> int | None | str:
         return None
     try:
         return int(value)
+    except ValueError:
+        return value
+
+
+def _as_float_or_none(value: str | None) -> float | None:
+    if value is None or value.strip() == "":
+        return None
+    try:
+        return float(value)
     except ValueError:
         return value

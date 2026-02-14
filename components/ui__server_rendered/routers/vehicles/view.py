@@ -28,6 +28,7 @@ def view_vehicle(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
+    office_options = [{"id": office.id, "name": office.name} for office in offices]
 
     return templates.TemplateResponse(
         request=request,
@@ -41,10 +42,13 @@ def view_vehicle(
                 "office_id": str(vehicle.office_id),
                 "name": vehicle.name,
                 "plate": vehicle.plate or "",
+                "lat": "" if vehicle.lat is None else str(vehicle.lat),
+                "lng": "" if vehicle.lng is None else str(vehicle.lng),
                 "max_capacity": str(vehicle.max_capacity),
             },
             "errors": {},
             "offices": offices,
+            "office_options": office_options,
             "lang": lang,
         },
     )

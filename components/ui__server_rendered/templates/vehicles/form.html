@@ -1,45 +1,95 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="w-full">
+<div class="w-full" x-data='vehicleForm({{ office_options|tojson }}, "{{ values.office_id }}", "{{ values.lat }}", "{{ values.lng }}")'>
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
 
-  <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4 max-w-2xl">
-    <div>
-      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.office") }}</label>
-      <select name="office_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
-        <option value="">{{ t(lang, "vehicles.select_office") }}</option>
-        {% for office in offices %}
-        <option value="{{ office.id }}" {% if values.office_id == office.id|string %}selected{% endif %}>#{{ office.id }} - {{ office.name }}</option>
-        {% endfor %}
-      </select>
-      {% if errors.office_id %}<p class="text-sm text-red-700 mt-1">{{ errors.office_id }}</p>{% endif %}
-    </div>
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.office") }}</label>
+        <input type="text" x-model="officeSearch" placeholder="{{ t(lang, 'vehicles.search_office_placeholder') }}" class="w-full rounded-md border border-slate-300 px-3 py-2 mb-2" {% if mode == 'view' %}disabled{% endif %} />
+        <select name="office_id" x-model="officeId" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
+          <option value="">{{ t(lang, "vehicles.select_office") }}</option>
+          <template x-for="office in filteredOffices" :key="office.id">
+            <option :value="String(office.id)" x-text="office.name"></option>
+          </template>
+        </select>
+        {% if errors.office_id %}<p class="text-sm text-red-700 mt-1">{{ errors.office_id }}</p>{% endif %}
+      </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.name") }}</label>
-      <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-      {% if errors.name %}<p class="text-sm text-red-700 mt-1">{{ errors.name }}</p>{% endif %}
-    </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.name") }}</label>
+        <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        {% if errors.name %}<p class="text-sm text-red-700 mt-1">{{ errors.name }}</p>{% endif %}
+      </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.plate") }}</label>
-      <input type="text" name="plate" value="{{ values.plate }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-      {% if errors.plate %}<p class="text-sm text-red-700 mt-1">{{ errors.plate }}</p>{% endif %}
-    </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.plate") }}</label>
+        <input type="text" name="plate" value="{{ values.plate }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        {% if errors.plate %}<p class="text-sm text-red-700 mt-1">{{ errors.plate }}</p>{% endif %}
+      </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.max_capacity") }}</label>
-      <input type="number" min="0" name="max_capacity" value="{{ values.max_capacity }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-      {% if errors.max_capacity %}<p class="text-sm text-red-700 mt-1">{{ errors.max_capacity }}</p>{% endif %}
-    </div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.latitude") }}</label>
+          <input type="number" step="any" name="lat" value="{{ values.lat }}" class="w-full rounded-md border border-slate-300 px-3 py-2" x-model="lat" @input.debounce.300ms="refreshMap()" {% if mode == 'view' %}disabled{% endif %} />
+          {% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.longitude") }}</label>
+          <input type="number" step="any" name="lng" value="{{ values.lng }}" class="w-full rounded-md border border-slate-300 px-3 py-2" x-model="lng" @input.debounce.300ms="refreshMap()" {% if mode == 'view' %}disabled{% endif %} />
+          {% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}
+        </div>
+      </div>
 
-    <div class="flex gap-3 pt-2">
-      <a href="{{ url_with_lang('/vehicles', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>
-      {% if mode != 'view' %}
-      <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>
-      {% endif %}
-    </div>
-  </form>
+      <div>
+        <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.max_capacity") }}</label>
+        <input type="number" min="0" name="max_capacity" value="{{ values.max_capacity }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        {% if errors.max_capacity %}<p class="text-sm text-red-700 mt-1">{{ errors.max_capacity }}</p>{% endif %}
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <a href="{{ url_with_lang('/vehicles', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>
+        {% if mode != 'view' %}
+        <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>
+        {% endif %}
+      </div>
+    </form>
+
+    <section class="bg-white border border-slate-200 rounded-lg p-3 lg:sticky lg:top-4">
+      <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") }}</h2>
+      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+        <iframe title="Google map preview" class="h-full w-full" loading="lazy" referrerpolicy="no-referrer-when-downgrade" :src="mapUrl"></iframe>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">{{ t(lang, "offices.showing_coordinates") }}: <span x-text="lat || '0'"></span>, <span x-text="lng || '0'"></span></p>
+    </section>
+  </div>
 </div>
+
+<script>
+  function vehicleForm(offices, initialOfficeId, initialLat, initialLng) {
+    return {
+      offices: offices || [],
+      officeSearch: "",
+      officeId: initialOfficeId || "",
+      lat: initialLat || "",
+      lng: initialLng || "",
+      mapUrl: "",
+      get filteredOffices() {
+        const term = (this.officeSearch || "").toLowerCase().trim();
+        if (!term) return this.offices;
+        return this.offices.filter((office) => (office.name || "").toLowerCase().includes(term));
+      },
+      init() {
+        this.refreshMap();
+      },
+      refreshMap() {
+        const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
+        const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
+        this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&z=15&output=embed`;
+      },
+    };
+  }
+</script>
 {% endblock %}
