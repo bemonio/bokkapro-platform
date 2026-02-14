@@ -1,13 +1,80 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="w-full" x-data="taskMap('{{ values.lat }}', '{{ values.lng }}')">
+<div
+  class="w-full"
+  x-data="taskForm({
+    initialLat: '{{ values.lat }}',
+    initialLng: '{{ values.lng }}',
+    initialOfficeId: '{{ values.office_id }}',
+    initialOfficeName: '{{ values.office_name or '' }}',
+    lang: '{{ lang }}'
+  })"
+>
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
     <form method="post" action="{{ url_with_lang(form_action, lang=lang) if mode != 'view' else '#' }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
       <div class="grid sm:grid-cols-2 gap-4">
-        <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.office") }}</label><select name="office_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for office in office_options %}<option value="{{ office.id }}" {% if values.office_id|string == office.id|string %}selected{% endif %}>{{ office.name }}</option>{% endfor %}</select></div>
+        <div class="relative">
+          <label class="block text-sm font-medium mb-1" for="office-search-input">{{ t(lang, "tasks.office") }}</label>
+          <input type="hidden" name="office_id" :value="selectedOfficeId" />
+          <input type="hidden" name="office_name" :value="selectedOfficeName" />
+          <button
+            id="office-search-input"
+            type="button"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
+            :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
+            @click="toggleOfficeDropdown()"
+            @keydown.down.prevent="openOfficeDropdown()"
+            @keydown.enter.prevent="toggleOfficeDropdown()"
+            @keydown.esc.prevent="closeOfficeDropdown()"
+            :aria-expanded="officeOpen"
+            aria-haspopup="listbox"
+            {% if mode == 'view' %}disabled{% endif %}
+          >
+            <span class="truncate" x-text="selectedOfficeName || officeTexts.placeholder"></span>
+            <span aria-hidden="true">▾</span>
+          </button>
+
+          <p class="text-xs text-red-600 mt-1" x-show="officeError" x-text="officeError"></p>
+
+          <div
+            x-show="officeOpen"
+            @click.outside="closeOfficeDropdown()"
+            class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg"
+            x-cloak
+          >
+            <div class="p-2 border-b border-slate-200">
+              <input
+                type="text"
+                class="w-full rounded-md border border-slate-300 px-3 py-2"
+                :placeholder="officeTexts.searchPlaceholder"
+                x-model="officeSearch"
+                @input="onOfficeSearchInput()"
+                @keydown.esc.prevent="closeOfficeDropdown()"
+              />
+            </div>
+
+            <div class="max-h-60 overflow-auto" @scroll="onOfficeDropdownScroll($event)" role="listbox" aria-label="Office options">
+              <template x-for="office in officeItems" :key="office.uuid">
+                <button
+                  type="button"
+                  class="w-full text-left px-3 py-2 hover:bg-slate-100"
+                  @click="selectOffice(office)"
+                  :class="{ 'bg-slate-100': String(selectedOfficeId) === String(office.id) }"
+                >
+                  <span x-text="office.name"></span>
+                </button>
+              </template>
+
+              <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingOffices" x-text="officeTexts.loading"></p>
+              <p class="px-3 py-2 text-sm text-slate-500" x-show="officeError && !isFetchingOffices" x-text="officeError"></p>
+              <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingOffices && !officeError && officeItems.length === 0" x-text="officeTexts.noResults"></p>
+            </div>
+          </div>
+        </div>
+
         <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.type") }}</label><select name="type" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}><option value="pickup" {% if values.type == 'pickup' %}selected{% endif %}>pickup</option><option value="delivery" {% if values.type == 'delivery' %}selected{% endif %}>delivery</option></select></div>
       </div>
       <div class="grid sm:grid-cols-2 gap-4">
@@ -42,11 +109,28 @@
 </div>
 
 <script>
-  function taskMap(initialLat, initialLng) {
+  function taskForm({ initialLat, initialLng, initialOfficeId, initialOfficeName, lang }) {
     return {
       lat: initialLat || "",
       lng: initialLng || "",
       mapUrl: "",
+      officeOpen: false,
+      officeSearch: "",
+      officeItems: [],
+      selectedOfficeId: initialOfficeId || "",
+      selectedOfficeName: initialOfficeName || "",
+      officePage: 1,
+      officeHasNext: true,
+      isFetchingOffices: false,
+      officeError: "{{ errors.get('office_id', '') }}",
+      officeDebounceTimer: null,
+      officeTexts: {
+        placeholder: "{{ t(lang, 'tasks.select_office') }}",
+        searchPlaceholder: "{{ t(lang, 'tasks.search_office_placeholder') }}",
+        loading: "{{ t(lang, 'common.loading') }}",
+        noResults: "{{ t(lang, 'common.no_results') }}",
+        fetchError: "{{ t(lang, 'tasks.office_load_error') }}",
+      },
       init() {
         this.refreshMap();
       },
@@ -54,6 +138,106 @@
         const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
         const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
         this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&z=15&output=embed`;
+      },
+      toggleOfficeDropdown() {
+        if (this.officeOpen) {
+          this.closeOfficeDropdown();
+          return;
+        }
+        this.openOfficeDropdown();
+      },
+      openOfficeDropdown() {
+        this.officeOpen = true;
+        if (this.officeItems.length === 0) {
+          this.resetOffices();
+          this.fetchOffices();
+        }
+      },
+      closeOfficeDropdown() {
+        this.officeOpen = false;
+      },
+      onOfficeSearchInput() {
+        clearTimeout(this.officeDebounceTimer);
+        this.officeDebounceTimer = setTimeout(() => {
+          this.resetOffices();
+          this.fetchOffices();
+        }, 350);
+      },
+      onOfficeDropdownScroll(event) {
+        const target = event.target;
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+        if (nearBottom) {
+          this.fetchOffices();
+        }
+      },
+      resetOffices() {
+        this.officePage = 1;
+        this.officeHasNext = true;
+        this.officeItems = [];
+        this.officeError = "";
+      },
+      async fetchOffices() {
+        if (this.isFetchingOffices || !this.officeHasNext) {
+          return;
+        }
+
+        this.isFetchingOffices = true;
+        this.officeError = "";
+
+        const query = new URLSearchParams({
+          page: String(this.officePage),
+          page_size: "20",
+          search: this.officeSearch,
+          sort: "name",
+          order: "asc",
+        });
+
+        try {
+          const response = await fetch(`/api/offices?${query.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Request failed with ${response.status}`);
+          }
+
+          const payload = await response.json();
+          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+          const byUuid = new Map(this.officeItems.map((item) => [item.uuid, item]));
+
+          incomingItems.forEach((item) => {
+            if (!byUuid.has(item.uuid)) {
+              byUuid.set(item.uuid, item);
+            }
+          });
+
+          if (this.selectedOfficeId && this.selectedOfficeName) {
+            const hasSelected = Array.from(byUuid.values()).some((item) => String(item.id) === String(this.selectedOfficeId));
+            if (!hasSelected) {
+              byUuid.set(`selected-${this.selectedOfficeId}`, {
+                uuid: `selected-${this.selectedOfficeId}`,
+                id: Number(this.selectedOfficeId),
+                name: this.selectedOfficeName,
+              });
+            }
+          }
+
+          this.officeItems = Array.from(byUuid.values());
+
+          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
+          this.officeHasNext = Boolean(meta && meta.hasNext);
+          if (incomingItems.length > 0) {
+            this.officePage += 1;
+          } else {
+            this.officeHasNext = false;
+          }
+        } catch (_error) {
+          this.officeError = this.officeTexts.fetchError;
+        } finally {
+          this.isFetchingOffices = false;
+        }
+      },
+      selectOffice(office) {
+        this.selectedOfficeId = office.id;
+        this.selectedOfficeName = office.name;
+        this.closeOfficeDropdown();
       },
     };
   }

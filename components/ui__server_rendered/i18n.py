@@ -133,6 +133,9 @@ TRANSLATIONS = {
             "priority_low": "Low",
             "priority_normal": "Normal",
             "priority_high": "High",
+            "select_office": "Select an office",
+            "search_office_placeholder": "Search office...",
+            "office_load_error": "Unable to load offices. Please try again.",
         },
     },
     "es": {
@@ -264,6 +267,9 @@ TRANSLATIONS = {
             "priority_low": "Baja",
             "priority_normal": "Normal",
             "priority_high": "Alta",
+            "select_office": "Selecciona una oficina",
+            "search_office_placeholder": "Buscar oficina...",
+            "office_load_error": "No pudimos cargar oficinas. Intenta nuevamente.",
         },
     },
 }

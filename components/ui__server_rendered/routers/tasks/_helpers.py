@@ -21,6 +21,7 @@ def validation_errors(exc: ValidationError) -> dict[str, str]:
 def create_from_form(form_data: Mapping[str, str]) -> tuple[TaskCreate | None, dict[str, str], dict[str, str]]:
     payload = {
         "office_id": form_data.get("office_id"),
+        "office_name": (form_data.get("office_name") or "").strip(),
         "type": form_data.get("type"),
         "status": form_data.get("status") or "pending",
         "lat": _as_float_or_none(form_data.get("lat")),
@@ -34,7 +35,9 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[TaskCreate | None, d
         "reference": (form_data.get("reference") or "").strip() or None,
         "notes": (form_data.get("notes") or "").strip() or None,
     }
+    office_name = payload.pop("office_name", "")
     values = {k: "" if v is None else str(v) for k, v in payload.items()}
+    values["office_name"] = office_name
 
     try:
         return TaskCreate.model_validate(payload), values, {}
@@ -45,6 +48,7 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[TaskCreate | None, d
 def update_from_form(form_data: Mapping[str, str]) -> tuple[TaskUpdate | None, dict[str, str], dict[str, str]]:
     payload = {
         "office_id": _as_int_or_none(form_data.get("office_id")),
+        "office_name": (form_data.get("office_name") or "").strip(),
         "type": form_data.get("type") or None,
         "status": form_data.get("status") or None,
         "lat": _as_float_or_none(form_data.get("lat")),
@@ -58,7 +62,9 @@ def update_from_form(form_data: Mapping[str, str]) -> tuple[TaskUpdate | None, d
         "reference": (form_data.get("reference") or "").strip() or None,
         "notes": (form_data.get("notes") or "").strip() or None,
     }
+    office_name = payload.pop("office_name", "")
     values = {k: "" if v is None else str(v) for k, v in payload.items()}
+    values["office_name"] = office_name
 
     try:
         return TaskUpdate.model_validate(payload), values, {}

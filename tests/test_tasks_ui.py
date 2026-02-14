@@ -68,7 +68,9 @@ def test_task_view_shows_google_maps_preview() -> None:
 
     res = client.get(f"/tasks/{task.id}")
     assert res.status_code == 200
-    assert 'x-data="taskMap(\'19.43\', \'-99.13\')"' in res.text
+    assert 'x-data="taskForm({' in res.text
+    assert "initialLat: '19.43'" in res.text
+    assert "initialLng: '-99.13'" in res.text
     assert "maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}" in res.text
     assert "Google map preview" in res.text
 
