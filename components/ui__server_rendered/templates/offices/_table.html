@@ -1,6 +1,7 @@
 {% set next_name_order = "desc" if sort == "name" and order == "asc" else "asc" %}
-{% set next_created_at_order = "asc" if sort == "created_at" and order == "desc" else "desc" %}
-{% set next_updated_at_order = "asc" if sort == "updated_at" and order == "desc" else "desc" %}
+{% set next_address_order = "desc" if sort == "address" and order == "asc" else "asc" %}
+{% set next_lat_order = "desc" if sort == "lat" and order == "asc" else "asc" %}
+{% set next_storage_capacity_order = "desc" if sort == "storage_capacity" and order == "asc" else "asc" %}
 
 <div class="bg-white border border-slate-200 rounded-lg overflow-hidden">
   <table class="w-full text-sm">
@@ -17,29 +18,37 @@
             Name{% if sort == "name" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
-        <th class="px-4 py-3">Address</th>
-        <th class="px-4 py-3">Coordinates</th>
-        <th class="px-4 py-3">Storage</th>
         <th class="px-4 py-3">
           <button
             type="button"
             class="inline-flex items-center gap-1 font-semibold"
-            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=created_at&order={{ next_created_at_order }}"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=address&order={{ next_address_order }}"
             hx-target="#offices-table"
             hx-push-url="true"
           >
-            Created{% if sort == "created_at" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+            Address{% if sort == "address" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
         <th class="px-4 py-3">
           <button
             type="button"
             class="inline-flex items-center gap-1 font-semibold"
-            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=updated_at&order={{ next_updated_at_order }}"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=lat&order={{ next_lat_order }}"
             hx-target="#offices-table"
             hx-push-url="true"
           >
-            Updated{% if sort == "updated_at" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+            Coordinates{% if sort == "lat" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button
+            type="button"
+            class="inline-flex items-center gap-1 font-semibold"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=storage_capacity&order={{ next_storage_capacity_order }}"
+            hx-target="#offices-table"
+            hx-push-url="true"
+          >
+            Storage{% if sort == "storage_capacity" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
         <th class="px-4 py-3 text-right">Actions</th>
@@ -58,8 +67,6 @@
           {% endif %}
         </td>
         <td class="px-4 py-3 text-slate-600">{{ office.storage_capacity }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ office.created_at }}</td>
-        <td class="px-4 py-3 text-slate-600">{{ office.updated_at }}</td>
         <td class="px-4 py-3">
           <div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
             <a
@@ -110,7 +117,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="7" class="px-4 py-6 text-center text-slate-500">No offices found.</td>
+        <td colspan="5" class="px-4 py-6 text-center text-slate-500">No offices found.</td>
       </tr>
       {% endfor %}
     </tbody>

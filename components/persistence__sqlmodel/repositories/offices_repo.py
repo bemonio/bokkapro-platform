@@ -8,6 +8,10 @@ from components.persistence__sqlmodel.repositories.shared.sorting import apply_s
 OFFICE_SORT_FIELDS = {
     "id": OfficeModel.id,
     "name": OfficeModel.name,
+    "address": OfficeModel.address,
+    "lat": OfficeModel.lat,
+    "lng": OfficeModel.lng,
+    "storage_capacity": OfficeModel.storage_capacity,
     "created_at": OfficeModel.created_at,
     "updated_at": OfficeModel.updated_at,
 }
