@@ -13,18 +13,29 @@ OfficeSortField = Literal[
     "created_at",
     "updated_at",
 ]
+VehicleSortField = Literal[
+    "id",
+    "office_id",
+    "name",
+    "plate",
+    "max_capacity",
+    "created_at",
+    "updated_at",
+]
 SortOrder = Literal["asc", "desc"]
 
 DEFAULT_OFFICE_SORT: OfficeSortField = "name"
 DEFAULT_OFFICE_ORDER: SortOrder = "asc"
+DEFAULT_VEHICLE_SORT: VehicleSortField = "name"
+DEFAULT_VEHICLE_ORDER: SortOrder = "asc"
 
 
 class ListQueryParams(BaseModel):
     page: int = 1
     page_size: int = 20
     search: str | None = None
-    sort: OfficeSortField = DEFAULT_OFFICE_SORT
-    order: SortOrder = DEFAULT_OFFICE_ORDER
+    sort: str
+    order: SortOrder
 
 
 def get_office_list_query_params(
@@ -35,10 +46,15 @@ def get_office_list_query_params(
     order: Annotated[SortOrder, Query()] = DEFAULT_OFFICE_ORDER,
 ) -> ListQueryParams:
     normalized_search = " ".join(search.split()) if search is not None else None
-    return ListQueryParams(
-        page=page,
-        page_size=page_size,
-        search=normalized_search or None,
-        sort=sort,
-        order=order,
-    )
+    return ListQueryParams(page=page, page_size=page_size, search=normalized_search or None, sort=sort, order=order)
+
+
+def get_vehicle_list_query_params(
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: Annotated[str | None, Query()] = None,
+    sort: Annotated[VehicleSortField, Query()] = DEFAULT_VEHICLE_SORT,
+    order: Annotated[SortOrder, Query()] = DEFAULT_VEHICLE_ORDER,
+) -> ListQueryParams:
+    normalized_search = " ".join(search.split()) if search is not None else None
+    return ListQueryParams(page=page, page_size=page_size, search=normalized_search or None, sort=sort, order=order)
