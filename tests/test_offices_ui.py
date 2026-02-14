@@ -287,3 +287,36 @@ def test_offices_ui_search_multi_field_and_multi_token() -> None:
     assert "South Point" in blank_res.text
 
     app.dependency_overrides.clear()
+
+
+def test_ui_i18n_spanish_and_language_selector() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    dashboard_res = client.get("/?lang=es")
+    assert dashboard_res.status_code == 200
+    assert "Panel" in dashboard_res.text
+    assert "Idioma" in dashboard_res.text
+
+    with Session(engine) as session:
+        session.add(OfficeModel(name="Centro", address="Calle Uno", lat=19.4, lng=-99.1, storage_capacity=10))
+        session.commit()
+
+    offices_res = client.get("/offices?lang=es", headers={"HX-Request": "true"})
+    assert offices_res.status_code == 200
+    assert "Nombre" in offices_res.text
+    assert "Acciones" in offices_res.text
+    assert "lang=es" in offices_res.text
+
+    app.dependency_overrides.clear()
