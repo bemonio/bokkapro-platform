@@ -3,11 +3,20 @@ from typing import Annotated, Literal
 from fastapi import Query
 from pydantic import BaseModel
 
-OfficeSortField = Literal["id", "name", "created_at", "updated_at"]
+OfficeSortField = Literal[
+    "id",
+    "name",
+    "address",
+    "lat",
+    "lng",
+    "storage_capacity",
+    "created_at",
+    "updated_at",
+]
 SortOrder = Literal["asc", "desc"]
 
-DEFAULT_OFFICE_SORT: OfficeSortField = "created_at"
-DEFAULT_OFFICE_ORDER: SortOrder = "desc"
+DEFAULT_OFFICE_SORT: OfficeSortField = "name"
+DEFAULT_OFFICE_ORDER: SortOrder = "asc"
 
 
 class ListQueryParams(BaseModel):

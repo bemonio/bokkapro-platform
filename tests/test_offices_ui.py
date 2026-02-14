@@ -176,8 +176,8 @@ def test_offices_ui_sorting_behaviour_and_params_preserved() -> None:
 
     default_res = client.get("/offices", headers={"HX-Request": "true"})
     assert default_res.status_code == 200
-    assert default_res.text.index("Bravo") < default_res.text.index("Alpha") < default_res.text.index("Zulu")
-    assert 'Created<span aria-hidden="true">↓</span>' in default_res.text
+    assert default_res.text.index("Alpha") < default_res.text.index("Bravo") < default_res.text.index("Zulu")
+    assert 'Name<span aria-hidden="true">↑</span>' in default_res.text
 
     name_asc_res = client.get(
         "/offices?sort=name&order=asc",
@@ -194,6 +194,23 @@ def test_offices_ui_sorting_behaviour_and_params_preserved() -> None:
     assert name_desc_res.status_code == 200
     assert name_desc_res.text.index("Zulu") < name_desc_res.text.index("Bravo") < name_desc_res.text.index("Alpha")
     assert 'Name<span aria-hidden="true">↓</span>' in name_desc_res.text
+
+    address_res = client.get(
+        "/offices?sort=address&order=asc",
+        headers={"HX-Request": "true"},
+    )
+    assert address_res.status_code == 200
+    assert address_res.text.index("Alpha") < address_res.text.index("Bravo") < address_res.text.index("Zulu")
+    assert 'Address<span aria-hidden="true">↑</span>' in address_res.text
+
+    storage_res = client.get(
+        "/offices?sort=storage_capacity&order=desc",
+        headers={"HX-Request": "true"},
+    )
+    assert storage_res.status_code == 200
+    assert 'Storage<span aria-hidden="true">↓</span>' in storage_res.text
+    assert "Created" not in storage_res.text
+    assert "Updated" not in storage_res.text
 
     preserved_params_res = client.get(
         "/offices?search=Alpha&page_size=5&sort=name&order=asc",
