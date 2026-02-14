@@ -3,11 +3,9 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_task_repository
-from components.app__office.use_cases.get_office import get_office
 from components.app__office.use_cases.list_offices import list_offices
 from components.app__task.use_cases.get_task import get_task
 from components.app__task.use_cases.update_task import update_task
-from components.domain__office.errors import OfficeNotFoundError
 from components.domain__task.errors import TaskNotFoundError
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 from components.persistence__sqlmodel.repositories.tasks_repo import TaskRepositorySqlModel
@@ -33,11 +31,9 @@ def edit_task_form(
 
     office_name = ""
     if task.office_id is not None:
-        try:
-            office = get_office(repository=office_repository, office_uuid=task.office_id)
+        office = office_repository.get(task.office_id)
+        if office is not None:
             office_name = office.name
-        except OfficeNotFoundError:
-            office_name = ""
 
     values = {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]}
     values["office_name"] = office_name

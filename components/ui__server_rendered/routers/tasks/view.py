@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_task_repository
-from components.app__office.use_cases.list_offices import list_offices
 from components.app__task.use_cases.get_task import get_task
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 from components.persistence__sqlmodel.repositories.tasks_repo import TaskRepositorySqlModel
@@ -24,8 +23,11 @@ def view_task_ui(
     task = get_task(repository=repository, task_uuid=task_uuid)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
+    office_name = ""
+    if task.office_id is not None:
+        office = office_repository.get(task.office_id)
+        if office is not None:
+            office_name = office.name
     return templates.TemplateResponse(
         request=request,
         name="tasks/form.html",
@@ -35,9 +37,11 @@ def view_task_ui(
             "mode": "view",
             "entity_uuid": task.uuid,
             "form_action": "",
-            "values": {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]},
+            "values": {
+                **{k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]},
+                "office_name": office_name,
+            },
             "errors": {},
-            "office_options": office_options,
             "lang": lang,
         },
     )

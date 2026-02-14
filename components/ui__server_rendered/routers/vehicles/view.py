@@ -40,6 +40,7 @@ def view_vehicle(
             "values": {
                 "office_id": str(vehicle.office_id),
                 "office_uuid": "" if selected_office is None else selected_office.uuid,
+                "office_name": "" if selected_office is None else selected_office.name,
                 "name": vehicle.name,
                 "plate": vehicle.plate or "",
                 "lat": "" if vehicle.lat is None else str(vehicle.lat),
