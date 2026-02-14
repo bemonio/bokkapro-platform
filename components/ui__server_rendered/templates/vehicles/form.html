@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="w-full">
+  <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
+
+  <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4 max-w-2xl">
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.office") }}</label>
+      <select name="office_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
+        <option value="">{{ t(lang, "vehicles.select_office") }}</option>
+        {% for office in offices %}
+        <option value="{{ office.id }}" {% if values.office_id == office.id|string %}selected{% endif %}>#{{ office.id }} - {{ office.name }}</option>
+        {% endfor %}
+      </select>
+      {% if errors.office_id %}<p class="text-sm text-red-700 mt-1">{{ errors.office_id }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.name") }}</label>
+      <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+      {% if errors.name %}<p class="text-sm text-red-700 mt-1">{{ errors.name }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.plate") }}</label>
+      <input type="text" name="plate" value="{{ values.plate }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+      {% if errors.plate %}<p class="text-sm text-red-700 mt-1">{{ errors.plate }}</p>{% endif %}
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.max_capacity") }}</label>
+      <input type="number" min="0" name="max_capacity" value="{{ values.max_capacity }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+      {% if errors.max_capacity %}<p class="text-sm text-red-700 mt-1">{{ errors.max_capacity }}</p>{% endif %}
+    </div>
+
+    <div class="flex gap-3 pt-2">
+      <a href="{{ url_with_lang('/vehicles', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>
+      {% if mode != 'view' %}
+      <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

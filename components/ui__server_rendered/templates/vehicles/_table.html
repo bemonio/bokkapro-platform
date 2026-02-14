@@ -1,0 +1,76 @@
+{% set next_name_order = 'desc' if sort == 'name' and order == 'asc' else 'asc' %}
+{% set next_plate_order = 'desc' if sort == 'plate' and order == 'asc' else 'asc' %}
+{% set next_office_order = 'desc' if sort == 'office_id' and order == 'asc' else 'asc' %}
+{% set next_capacity_order = 'desc' if sort == 'max_capacity' and order == 'asc' else 'asc' %}
+
+<div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-left text-slate-600">
+      <tr>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/vehicles?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=name&order={{ next_name_order }}&lang={{ lang }}" hx-target="#vehicles-table" hx-push-url="true">
+            {{ t(lang, "vehicles.name") }}{% if sort == "name" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/vehicles?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=plate&order={{ next_plate_order }}&lang={{ lang }}" hx-target="#vehicles-table" hx-push-url="true">
+            {{ t(lang, "vehicles.plate") }}{% if sort == "plate" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/vehicles?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=office_id&order={{ next_office_order }}&lang={{ lang }}" hx-target="#vehicles-table" hx-push-url="true">
+            {{ t(lang, "vehicles.office") }}{% if sort == "office_id" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/vehicles?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=max_capacity&order={{ next_capacity_order }}&lang={{ lang }}" hx-target="#vehicles-table" hx-push-url="true">
+            {{ t(lang, "vehicles.max_capacity") }}{% if sort == "max_capacity" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3 text-right">{{ t(lang, "common.actions") }}</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for vehicle in vehicles %}
+      <tr class="border-t border-slate-200">
+        <td class="px-4 py-3 font-medium">{{ vehicle.name }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ vehicle.plate or "—" }}</td>
+        <td class="px-4 py-3 text-slate-600">#{{ vehicle.office_id }}</td>
+        <td class="px-4 py-3 text-slate-600">{{ vehicle.max_capacity }}</td>
+        <td class="px-4 py-3">
+          <div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
+            <a href="{{ url_with_lang('/vehicles/' ~ vehicle.id, lang=lang) }}" class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100">{{ t(lang, "vehicles.view") }}</a>
+            <a href="{{ url_with_lang('/vehicles/' ~ vehicle.id ~ '/edit', lang=lang) }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">{{ t(lang, "vehicles.edit") }}</a>
+            <button type="button" class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100" @click="openDeleteModal = true">{{ t(lang, "vehicles.delete") }}</button>
+            <form method="post" action="{{ url_with_lang('/vehicles/' ~ vehicle.id ~ '/delete', lang=lang) }}" x-ref="deleteForm"></form>
+
+            <div x-show="openDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" @click.self="openDeleteModal = false">
+              <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
+                <div class="border-b border-slate-200 px-5 py-4"><h3 class="text-base font-semibold text-slate-900">{{ t(lang, "vehicles.delete_title") }}</h3></div>
+                <div class="px-5 py-4 text-sm text-slate-700">{{ t(lang, "vehicles.delete_question", name=vehicle.name) }} {{ t(lang, "vehicles.delete_warning") }}</div>
+                <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
+                  <button type="button" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="openDeleteModal = false">{{ t(lang, "vehicles.cancel") }}</button>
+                  <button type="button" class="inline-flex items-center rounded-md border border-red-600 bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700" @click="$refs.deleteForm.submit()">{{ t(lang, "vehicles.delete") }}</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">{{ t(lang, "vehicles.no_results") }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="flex items-center justify-between text-sm mt-3">
+  <p class="text-slate-600">{{ t(lang, "vehicles.total") }}: {{ pagination.total }}</p>
+  <div class="flex items-center gap-2">
+    <a class="px-3 py-1 border rounded {% if not pagination.has_prev %}pointer-events-none opacity-50{% endif %}" href="/vehicles?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-get="/vehicles?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-target="#vehicles-table" hx-push-url="true">{{ t(lang, "vehicles.prev") }}</a>
+    <span>{{ t(lang, "vehicles.page_of", page=pagination.page, total_pages=pagination.total_pages) }}</span>
+    <a class="px-3 py-1 border rounded {% if not pagination.has_next %}pointer-events-none opacity-50{% endif %}" href="/vehicles?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-get="/vehicles?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-target="#vehicles-table" hx-push-url="true">{{ t(lang, "vehicles.next") }}</a>
+  </div>
+</div>

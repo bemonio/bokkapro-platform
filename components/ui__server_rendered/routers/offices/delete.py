@@ -17,7 +17,7 @@ def delete_office_ui(
     lang: str = Depends(get_locale),
 ):
     try:
-        delete_office(repository=repository, office_id=office_id)
+        delete_office(repository=repository, office_uuid=office_id)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

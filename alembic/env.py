@@ -5,6 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from bases.platform.config import get_settings
 from components.persistence__sqlmodel.models.office import OfficeModel  # noqa: F401
+from components.persistence__sqlmodel.models.vehicle import VehicleModel  # noqa: F401
 from sqlmodel import SQLModel
 
 config = context.config

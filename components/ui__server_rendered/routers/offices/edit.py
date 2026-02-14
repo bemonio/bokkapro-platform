@@ -23,7 +23,7 @@ def edit_office_form(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        office = get_office(repository=repository, office_id=office_id)
+        office = get_office(repository=repository, office_uuid=office_id)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -57,7 +57,7 @@ async def edit_office_ui(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        get_office(repository=repository, office_id=office_id)
+        get_office(repository=repository, office_uuid=office_id)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -84,7 +84,7 @@ async def edit_office_ui(
 
     update_office(
         repository=repository,
-        office_id=office_id,
+        office_uuid=office_id,
         name=payload.name,
         address=payload.address,
         lat=payload.lat,
