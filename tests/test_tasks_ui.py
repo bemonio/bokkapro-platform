@@ -39,6 +39,10 @@ def test_tasks_ui_list_and_i18n() -> None:
     assert "Entrega" in res.text
     assert "Centro" in res.text
     assert "lang=es" in res.text
+    assert "Total" in res.text
+    assert "Anterior" in res.text
+    assert "Página 1 / 1" in res.text
+    assert "Siguiente" in res.text
 
     app.dependency_overrides.clear()
 
