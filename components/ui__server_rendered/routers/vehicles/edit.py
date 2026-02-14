@@ -102,7 +102,7 @@ async def edit_vehicle_ui(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    vehicle = update_vehicle(
+    update_vehicle(
         repository=repository,
         vehicle_uuid=vehicle_uuid,
         office_id=payload.office_id,
@@ -112,4 +112,4 @@ async def edit_vehicle_ui(
         lng=payload.lng,
         max_capacity=payload.max_capacity,
     )
-    return RedirectResponse(url=f"/vehicles/{vehicle.uuid}?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/vehicles?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)

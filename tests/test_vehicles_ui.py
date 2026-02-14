@@ -57,3 +57,35 @@ def test_vehicle_new_form_uses_async_office_dropdown() -> None:
     assert '/api/offices?' in res.text
 
     app.dependency_overrides.clear()
+
+
+def test_vehicle_edit_redirects_to_list_after_save() -> None:
+    client, session = _build_client()
+
+    office = OfficeModel(name="Centro", address="Calle 1", storage_capacity=10)
+    session.add(office)
+    session.commit()
+    session.refresh(office)
+
+    vehicle = VehicleModel(office_id=office.id, name="Camión", plate="XYZ-001", lat=19.43, lng=-99.13, max_capacity=8)
+    session.add(vehicle)
+    session.commit()
+    session.refresh(vehicle)
+
+    res = client.post(
+        f"/vehicles/{vehicle.uuid}/edit",
+        data={
+            "office_uuid": office.uuid,
+            "name": "Camión actualizado",
+            "plate": "XYZ-002",
+            "lat": "19.44",
+            "lng": "-99.12",
+            "max_capacity": "9",
+        },
+        follow_redirects=False,
+    )
+
+    assert res.status_code == 303
+    assert res.headers["location"] == "/vehicles?lang=en"
+
+    app.dependency_overrides.clear()
