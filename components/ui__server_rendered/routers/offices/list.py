@@ -1,9 +1,8 @@
-from typing import Literal
-
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository
+from components.api__fastapi.schemas.common import ListQueryParams, get_office_list_query_params
 from components.app__office.use_cases.list_offices import list_offices
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 from components.ui__server_rendered.dependencies import get_templates
@@ -16,30 +15,26 @@ router = APIRouter()
 @router.get("/")
 def list_offices_ui(
     request: Request,
-    page: int = Query(default=1, ge=1),
-    page_size: int = Query(default=10, ge=1, le=100),
-    search: str | None = Query(default=None),
-    sort: Literal["name", "created_at", "updated_at"] = Query(default="created_at"),
-    order: Literal["asc", "desc"] = Query(default="desc"),
+    params: ListQueryParams = Depends(get_office_list_query_params),
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     items, total = list_offices(
         repository=repository,
-        page=page,
-        page_size=page_size,
-        search=search,
-        sort=sort,
-        order=order,
+        page=params.page,
+        page_size=params.page_size,
+        search=params.search,
+        sort=params.sort,
+        order=params.order,
     )
     context = {
         "request": request,
         "title": "Offices",
         "offices": items,
-        "search": search or "",
-        "sort": sort,
-        "order": order,
-        "pagination": build_pagination(page=page, page_size=page_size, total=total),
+        "search": params.search or "",
+        "sort": params.sort,
+        "order": params.order,
+        "pagination": build_pagination(page=params.page, page_size=params.page_size, total=total),
     }
 
     if request.headers.get("HX-Request") == "true":
