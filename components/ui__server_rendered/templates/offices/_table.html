@@ -71,11 +71,11 @@
         <td class="px-4 py-3">
           <div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
             <a
-              href="{{ url_with_lang('/offices/' ~ office.id, lang=lang) }}"
+              href="{{ url_with_lang('/offices/' ~ office.uuid, lang=lang) }}"
               class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
             >{{ t(lang, "offices.view") }}</a>
             <a
-              href="{{ url_with_lang('/offices/' ~ office.id ~ '/edit', lang=lang) }}"
+              href="{{ url_with_lang('/offices/' ~ office.uuid ~ '/edit', lang=lang) }}"
               class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
             >{{ t(lang, "offices.edit") }}</a>
             <button
@@ -84,7 +84,7 @@
               @click="openDeleteModal = true"
             >{{ t(lang, "offices.delete") }}</button>
 
-            <form method="post" action="{{ url_with_lang('/offices/' ~ office.id ~ '/delete', lang=lang) }}" x-ref="deleteForm"></form>
+            <form method="post" action="{{ url_with_lang('/offices/' ~ office.uuid ~ '/delete', lang=lang) }}" x-ref="deleteForm"></form>
 
             <div
               x-show="openDeleteModal"
