@@ -223,7 +223,7 @@ def test_offices_ui_sorting_behaviour_and_params_preserved() -> None:
     app.dependency_overrides.clear()
 
 
-def test_offices_ui_search_multi_field_and_multi_token() -> None:
+def test_offices_ui_search_multi_field_and_phrase() -> None:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -276,7 +276,7 @@ def test_offices_ui_search_multi_field_and_multi_token() -> None:
     assert "North Hub" in by_uuid_res.text
     assert "South Point" not in by_uuid_res.text
 
-    multi_token_res = client.get("/offices?search= north   terrace ", headers={"HX-Request": "true"})
+    multi_token_res = client.get("/offices?search= evergreen   terrace ", headers={"HX-Request": "true"})
     assert multi_token_res.status_code == 200
     assert "North Hub" in multi_token_res.text
     assert "South Point" not in multi_token_res.text

@@ -139,7 +139,7 @@ def test_offices_api_sort_name_asc() -> None:
     app.dependency_overrides.clear()
 
 
-def test_offices_api_search_multi_field_and_multi_token() -> None:
+def test_offices_api_search_multi_field_and_phrase() -> None:
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -198,7 +198,7 @@ def test_offices_api_search_multi_field_and_multi_token() -> None:
     assert by_uuid_body["meta"]["pagination"]["total"] == 1
     assert by_uuid_body["data"][0]["uuid"] == alpha_uuid
 
-    multi_token_res = client.get("/api/offices?search= north   terrace ")
+    multi_token_res = client.get("/api/offices?search= evergreen   terrace ")
     assert multi_token_res.status_code == 200
     multi_token_body = multi_token_res.json()
     assert multi_token_body["meta"]["pagination"]["total"] == 1
