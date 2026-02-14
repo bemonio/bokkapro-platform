@@ -3,6 +3,7 @@
 {% block content %}
 <div class="w-full" x-data='vehicleForm({{ office_options|tojson }}, "{{ values.office_id }}", "{{ values.lat }}", "{{ values.lng }}")'>
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
+  {% if entity_uuid %}<p class="-mt-4 mb-6 break-all text-[10px] text-slate-400">{{ entity_uuid }}</p>{% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
     <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
