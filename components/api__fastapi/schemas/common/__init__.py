@@ -1,10 +1,13 @@
 from components.api__fastapi.schemas.common.list_query import (
     DEFAULT_OFFICE_ORDER,
     DEFAULT_OFFICE_SORT,
+    DEFAULT_TASK_ORDER,
+    DEFAULT_TASK_SORT,
     DEFAULT_VEHICLE_ORDER,
     DEFAULT_VEHICLE_SORT,
     ListQueryParams,
     get_office_list_query_params,
+    get_task_list_query_params,
     get_vehicle_list_query_params,
 )
 from components.api__fastapi.schemas.common.pagination import Meta, PaginatedResponse, PaginationMeta
@@ -12,6 +15,8 @@ from components.api__fastapi.schemas.common.pagination import Meta, PaginatedRes
 __all__ = [
     "DEFAULT_OFFICE_ORDER",
     "DEFAULT_OFFICE_SORT",
+    "DEFAULT_TASK_ORDER",
+    "DEFAULT_TASK_SORT",
     "DEFAULT_VEHICLE_ORDER",
     "DEFAULT_VEHICLE_SORT",
     "ListQueryParams",
@@ -19,5 +24,6 @@ __all__ = [
     "PaginatedResponse",
     "PaginationMeta",
     "get_office_list_query_params",
+    "get_task_list_query_params",
     "get_vehicle_list_query_params",
 ]
