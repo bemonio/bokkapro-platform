@@ -7,7 +7,8 @@ from components.app__office.use_cases.get_office import get_office
 from components.app__office.use_cases.update_office import update_office
 from components.domain__office.errors import OfficeNotFoundError
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
-from components.ui__server_rendered.dependencies import get_templates
+from components.ui__server_rendered.dependencies import get_locale, get_templates
+from components.ui__server_rendered.i18n import translate
 from components.ui__server_rendered.routers.offices._helpers import update_from_form
 
 router = APIRouter()
@@ -18,6 +19,7 @@ def edit_office_form(
     office_id: int,
     request: Request,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
+    lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
@@ -30,7 +32,7 @@ def edit_office_form(
         name="offices/form.html",
         context={
             "request": request,
-            "title": f"Edit Office #{office.id}",
+            "title": translate(lang, "offices.form_edit_title", office_id=office.id),
             "mode": "edit",
             "form_action": f"/offices/{office.id}/edit",
             "values": {
@@ -41,6 +43,7 @@ def edit_office_form(
                 "storage_capacity": str(office.storage_capacity),
             },
             "errors": {},
+            "lang": lang,
         },
     )
 
@@ -50,6 +53,7 @@ async def edit_office_ui(
     office_id: int,
     request: Request,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
+    lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
@@ -61,18 +65,19 @@ async def edit_office_ui(
     payload, values, errors = update_from_form(form_data)
     if payload is None or payload.name is None or payload.storage_capacity is None:
         if payload is not None:
-            errors["name"] = errors.get("name", "Name is required")
-            errors["storage_capacity"] = errors.get("storage_capacity", "Storage capacity is required")
+            errors["name"] = errors.get("name", translate(lang, "offices.name_required"))
+            errors["storage_capacity"] = errors.get("storage_capacity", translate(lang, "offices.storage_required"))
         return templates.TemplateResponse(
             request=request,
             name="offices/form.html",
             context={
                 "request": request,
-                "title": f"Edit Office #{office_id}",
+                "title": translate(lang, "offices.form_edit_title", office_id=office_id),
                 "mode": "edit",
                 "form_action": f"/offices/{office_id}/edit",
                 "values": values,
                 "errors": errors,
+                "lang": lang,
             },
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         )
@@ -87,4 +92,4 @@ async def edit_office_ui(
         storage_capacity=payload.storage_capacity,
     )
 
-    return RedirectResponse(url="/offices", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/offices?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)

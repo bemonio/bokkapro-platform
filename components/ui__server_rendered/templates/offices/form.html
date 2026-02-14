@@ -4,42 +4,42 @@
 <div class="max-w-2xl">
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
 
-  <form method="post" action="{{ form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
+  <form method="post" action="{{ url_with_lang(form_action, lang=lang) }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
     <div>
-      <label class="block text-sm font-medium mb-1">Name</label>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.name") }}</label>
       <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
       {% if errors.name %}<p class="text-sm text-red-700 mt-1">{{ errors.name }}</p>{% endif %}
     </div>
 
     <div>
-      <label class="block text-sm font-medium mb-1">Address</label>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.address") }}</label>
       <input type="text" name="address" value="{{ values.address }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
       {% if errors.address %}<p class="text-sm text-red-700 mt-1">{{ errors.address }}</p>{% endif %}
     </div>
 
     <div class="grid sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium mb-1">Latitude</label>
+        <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.latitude") }}</label>
         <input type="number" step="any" name="lat" value="{{ values.lat }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
         {% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}
       </div>
       <div>
-        <label class="block text-sm font-medium mb-1">Longitude</label>
+        <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.longitude") }}</label>
         <input type="number" step="any" name="lng" value="{{ values.lng }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
         {% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}
       </div>
     </div>
 
     <div>
-      <label class="block text-sm font-medium mb-1">Storage Capacity</label>
+      <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.storage_capacity") }}</label>
       <input type="number" min="0" name="storage_capacity" value="{{ values.storage_capacity }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
       {% if errors.storage_capacity %}<p class="text-sm text-red-700 mt-1">{{ errors.storage_capacity }}</p>{% endif %}
     </div>
 
     <div class="flex gap-3 pt-2">
-      <a href="/offices" class="px-4 py-2 border border-slate-300 rounded-md">Back</a>
+      <a href="{{ url_with_lang('/offices', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>
       {% if mode != 'view' %}
-      <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">Save</button>
+      <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>
       {% endif %}
     </div>
   </form>

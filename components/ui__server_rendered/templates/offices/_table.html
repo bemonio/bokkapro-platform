@@ -11,47 +11,47 @@
           <button
             type="button"
             class="inline-flex items-center gap-1 font-semibold"
-            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=name&order={{ next_name_order }}"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=name&order={{ next_name_order }}&lang={{ lang }}"
             hx-target="#offices-table"
             hx-push-url="true"
           >
-            Name{% if sort == "name" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+            {{ t(lang, "offices.name") }}{% if sort == "name" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
         <th class="px-4 py-3">
           <button
             type="button"
             class="inline-flex items-center gap-1 font-semibold"
-            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=address&order={{ next_address_order }}"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=address&order={{ next_address_order }}&lang={{ lang }}"
             hx-target="#offices-table"
             hx-push-url="true"
           >
-            Address{% if sort == "address" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+            {{ t(lang, "offices.address") }}{% if sort == "address" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
         <th class="px-4 py-3">
           <button
             type="button"
             class="inline-flex items-center gap-1 font-semibold"
-            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=lat&order={{ next_lat_order }}"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=lat&order={{ next_lat_order }}&lang={{ lang }}"
             hx-target="#offices-table"
             hx-push-url="true"
           >
-            Coordinates{% if sort == "lat" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+            {{ t(lang, "offices.coordinates") }}{% if sort == "lat" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
         <th class="px-4 py-3">
           <button
             type="button"
             class="inline-flex items-center gap-1 font-semibold"
-            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=storage_capacity&order={{ next_storage_capacity_order }}"
+            hx-get="/offices?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=storage_capacity&order={{ next_storage_capacity_order }}&lang={{ lang }}"
             hx-target="#offices-table"
             hx-push-url="true"
           >
-            Storage{% if sort == "storage_capacity" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+            {{ t(lang, "offices.storage") }}{% if sort == "storage_capacity" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
           </button>
         </th>
-        <th class="px-4 py-3 text-right">Actions</th>
+        <th class="px-4 py-3 text-right">{{ t(lang, "common.actions") }}</th>
       </tr>
     </thead>
     <tbody>
@@ -70,20 +70,20 @@
         <td class="px-4 py-3">
           <div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
             <a
-              href="/offices/{{ office.id }}"
+              href="{{ url_with_lang('/offices/' ~ office.id, lang=lang) }}"
               class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
-            >View</a>
+            >{{ t(lang, "offices.view") }}</a>
             <a
-              href="/offices/{{ office.id }}/edit"
+              href="{{ url_with_lang('/offices/' ~ office.id ~ '/edit', lang=lang) }}"
               class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-            >Edit</a>
+            >{{ t(lang, "offices.edit") }}</a>
             <button
               type="button"
               class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100"
               @click="openDeleteModal = true"
-            >Delete</button>
+            >{{ t(lang, "offices.delete") }}</button>
 
-            <form method="post" action="/offices/{{ office.id }}/delete" x-ref="deleteForm"></form>
+            <form method="post" action="{{ url_with_lang('/offices/' ~ office.id ~ '/delete', lang=lang) }}" x-ref="deleteForm"></form>
 
             <div
               x-show="openDeleteModal"
@@ -92,23 +92,23 @@
             >
               <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
                 <div class="border-b border-slate-200 px-5 py-4">
-                  <h3 class="text-base font-semibold text-slate-900">Delete Office</h3>
+                  <h3 class="text-base font-semibold text-slate-900">{{ t(lang, "offices.delete_title") }}</h3>
                 </div>
                 <div class="px-5 py-4 text-sm text-slate-700">
-                  Are you sure you want to delete <span class="font-semibold text-slate-900">{{ office.name }}</span>?
-                  This action cannot be undone.
+                  {{ t(lang, "offices.delete_question", name=office.name) }}
+                  {{ t(lang, "offices.delete_warning") }}
                 </div>
                 <div class="flex justify-end gap-2 border-t border-slate-200 px-5 py-4">
                   <button
                     type="button"
                     class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                     @click="openDeleteModal = false"
-                  >Cancel</button>
+                  >{{ t(lang, "offices.cancel") }}</button>
                   <button
                     type="button"
                     class="inline-flex items-center rounded-md border border-red-600 bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
                     @click="$refs.deleteForm.submit()"
-                  >Delete</button>
+                  >{{ t(lang, "offices.delete") }}</button>
                 </div>
               </div>
             </div>
@@ -117,7 +117,7 @@
       </tr>
       {% else %}
       <tr>
-        <td colspan="5" class="px-4 py-6 text-center text-slate-500">No offices found.</td>
+        <td colspan="5" class="px-4 py-6 text-center text-slate-500">{{ t(lang, "offices.no_results") }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -125,22 +125,22 @@
 </div>
 
 <div class="flex items-center justify-between text-sm mt-3">
-  <p class="text-slate-600">Total: {{ pagination.total }}</p>
+  <p class="text-slate-600">{{ t(lang, "offices.total") }}: {{ pagination.total }}</p>
   <div class="flex items-center gap-2">
     <a
       class="px-3 py-1 border rounded {% if not pagination.has_prev %}pointer-events-none opacity-50{% endif %}"
-      href="/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}"
-      hx-get="/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}"
+      href="/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
+      hx-get="/offices?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
       hx-target="#offices-table"
       hx-push-url="true"
-    >Prev</a>
-    <span>Page {{ pagination.page }} / {{ pagination.total_pages }}</span>
+    >{{ t(lang, "offices.prev") }}</a>
+    <span>{{ t(lang, "offices.page_of", page=pagination.page, total_pages=pagination.total_pages) }}</span>
     <a
       class="px-3 py-1 border rounded {% if not pagination.has_next %}pointer-events-none opacity-50{% endif %}"
-      href="/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}"
-      hx-get="/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}"
+      href="/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
+      hx-get="/offices?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
       hx-target="#offices-table"
       hx-push-url="true"
-    >Next</a>
+    >{{ t(lang, "offices.next") }}</a>
   </div>
 </div>

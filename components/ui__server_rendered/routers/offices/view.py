@@ -5,7 +5,8 @@ from components.api__fastapi.dependencies import get_office_repository
 from components.app__office.use_cases.get_office import get_office
 from components.domain__office.errors import OfficeNotFoundError
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
-from components.ui__server_rendered.dependencies import get_templates
+from components.ui__server_rendered.dependencies import get_locale, get_templates
+from components.ui__server_rendered.i18n import translate
 
 router = APIRouter()
 
@@ -15,6 +16,7 @@ def view_office(
     office_id: int,
     request: Request,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
+    lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
@@ -27,7 +29,7 @@ def view_office(
         name="offices/form.html",
         context={
             "request": request,
-            "title": f"Office #{office.id}",
+            "title": translate(lang, "offices.form_view_title", office_id=office.id),
             "mode": "view",
             "form_action": "#",
             "values": {
@@ -38,5 +40,6 @@ def view_office(
                 "storage_capacity": str(office.storage_capacity),
             },
             "errors": {},
+            "lang": lang,
         },
     )
