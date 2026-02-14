@@ -94,11 +94,47 @@ def test_office_list_meta_echoes_filters_and_sort() -> None:
     app.dependency_overrides[get_session] = _session_override
     client = TestClient(app)
 
-    res = client.get("/api/offices?search=HQ&sort_by=name&sort_order=asc")
+    res = client.get("/api/offices?search= HQ  &sort=name&order=asc")
     assert res.status_code == 200
     body = res.json()
     assert body["meta"]["filters"] == {"search": "HQ"}
     assert body["meta"]["sort"] == {"by": "name", "order": "asc"}
+
+    app.dependency_overrides.clear()
+
+
+def test_offices_api_sort_name_asc() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    for name in ["Zulu", "Alpha", "Bravo"]:
+        create_res = client.post(
+            "/api/offices",
+            json={
+                "name": name,
+                "address": f"{name} St",
+                "lat": 35.0,
+                "lng": 139.0,
+                "storage_capacity": 10,
+            },
+        )
+        assert create_res.status_code == 201
+
+    sorted_res = client.get("/api/offices?sort=name&order=asc")
+    assert sorted_res.status_code == 200
+    body = sorted_res.json()
+    assert [item["name"] for item in body["data"]] == ["Alpha", "Bravo", "Zulu"]
 
     app.dependency_overrides.clear()
 
