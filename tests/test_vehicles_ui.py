@@ -46,3 +46,14 @@ def test_vehicles_ui_list_and_i18n() -> None:
     assert "lang=es" in res.text
 
     app.dependency_overrides.clear()
+
+
+def test_vehicle_new_form_uses_async_office_dropdown() -> None:
+    client, _ = _build_client()
+
+    res = client.get("/vehicles/new")
+    assert res.status_code == 200
+    assert 'name="office_uuid"' in res.text
+    assert '/api/offices?' in res.text
+
+    app.dependency_overrides.clear()
