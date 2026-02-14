@@ -12,9 +12,9 @@ from components.ui__server_rendered.i18n import translate
 router = APIRouter()
 
 
-@router.get("/{vehicle_id}")
+@router.get("/{vehicle_uuid}")
 def view_vehicle(
-    vehicle_id: int,
+    vehicle_uuid: str,
     request: Request,
     repository: VehicleRepositorySqlModel = Depends(get_vehicle_repository),
     office_repository: OfficeRepositorySqlModel = Depends(get_office_repository),
@@ -22,7 +22,7 @@ def view_vehicle(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        vehicle = get_vehicle(repository=repository, vehicle_uuid=vehicle_id)
+        vehicle = get_vehicle(repository=repository, vehicle_uuid=vehicle_uuid)
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -33,8 +33,9 @@ def view_vehicle(
         name="vehicles/form.html",
         context={
             "request": request,
-            "title": translate(lang, "vehicles.form_view_title", vehicle_id=vehicle.id),
+            "title": translate(lang, "vehicles.form_view_title"),
             "mode": "view",
+            "entity_uuid": vehicle.uuid,
             "form_action": "#",
             "values": {
                 "office_id": str(vehicle.office_id),

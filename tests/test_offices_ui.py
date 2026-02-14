@@ -323,3 +323,35 @@ def test_ui_i18n_spanish_and_language_selector() -> None:
     assert "lang=es" in offices_res.text
 
     app.dependency_overrides.clear()
+
+
+def test_office_edit_hides_numeric_id_and_shows_uuid() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    with Session(engine) as session:
+        office = OfficeModel(name="Central", address="100 Main St", lat=40.0, lng=-73.0, storage_capacity=99)
+        session.add(office)
+        session.commit()
+        session.refresh(office)
+        office_uuid = office.uuid
+        office_id = office.id
+
+    res = client.get(f"/offices/{office_uuid}/edit?lang=es")
+    assert res.status_code == 200
+    assert "Editar oficina" in res.text
+    assert office_uuid in res.text
+    assert f"#{office_id}" not in res.text
+
+    app.dependency_overrides.clear()

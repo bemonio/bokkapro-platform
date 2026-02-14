@@ -9,14 +9,14 @@ from components.persistence__sqlmodel.repositories.vehicles_repo import VehicleR
 router = APIRouter()
 
 
-@router.post("/{vehicle_id}/delete")
+@router.post("/{vehicle_uuid}/delete")
 def delete_vehicle_ui(
-    vehicle_id: int,
+    vehicle_uuid: str,
     lang: str = "en",
     repository: VehicleRepositorySqlModel = Depends(get_vehicle_repository),
 ):
     try:
-        delete_vehicle(repository=repository, vehicle_uuid=vehicle_id)
+        delete_vehicle(repository=repository, vehicle_uuid=vehicle_uuid)
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

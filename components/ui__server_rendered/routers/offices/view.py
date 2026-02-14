@@ -29,8 +29,9 @@ def view_office(
         name="offices/form.html",
         context={
             "request": request,
-            "title": translate(lang, "offices.form_view_title", office_id=office.id),
+            "title": translate(lang, "offices.form_view_title"),
             "mode": "view",
+            "entity_uuid": office.uuid,
             "form_action": "#",
             "values": {
                 "name": office.name,
