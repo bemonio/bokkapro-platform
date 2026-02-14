@@ -39,18 +39,24 @@ def test_vehicle_crud_flow() -> None:
 
     create_res = client.post(
         "/api/vehicles",
-        json={"office_id": office_id, "name": "Truck 1", "plate": "ABC-123", "max_capacity": 12},
+        json={"office_id": office_id, "name": "Truck 1", "plate": "ABC-123", "lat": 19.43, "lng": -99.13, "max_capacity": 12},
     )
     assert create_res.status_code == 201, create_res.text
-    vehicle_uuid = create_res.json()["uuid"]
+    vehicle_payload = create_res.json()
+    vehicle_uuid = vehicle_payload["uuid"]
+    assert "office_id" not in vehicle_payload
+    assert vehicle_payload["office_uuid"] == office_uuid
+    assert vehicle_payload["office_name"] == "HQ"
 
     list_res = client.get("/api/vehicles")
     assert list_res.status_code == 200
     assert list_res.json()["meta"]["pagination"]["total"] == 1
+    assert list_res.json()["data"][0]["office_name"] == "HQ"
 
     get_res = client.get(f"/api/vehicles/{vehicle_uuid}")
     assert get_res.status_code == 200
     assert get_res.json()["name"] == "Truck 1"
+    assert get_res.json()["lat"] == 19.43
 
     update_res = client.put(f"/api/vehicles/{vehicle_uuid}", json={"name": "Truck XL", "max_capacity": 20})
     assert update_res.status_code == 200

@@ -16,6 +16,8 @@ class VehicleModel(SQLModel, table=True):
     office_id: int = Field(foreign_key="offices.id", index=True)
     name: str = Field(min_length=2)
     plate: str | None = None
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lng: float | None = Field(default=None, ge=-180, le=180)
 
     max_capacity: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=utc_now)

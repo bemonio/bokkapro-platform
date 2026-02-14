@@ -53,6 +53,7 @@ TRANSLATIONS = {
             "form_edit_title": "Edit Vehicle #{vehicle_id}",
             "form_new_title": "New Vehicle",
             "select_office": "Select an office",
+            "search_office_placeholder": "Search office...",
         },
         "offices": {
             "title": "Offices",
@@ -136,6 +137,7 @@ TRANSLATIONS = {
             "form_edit_title": "Editar vehículo #{vehicle_id}",
             "form_new_title": "Nuevo vehículo",
             "select_office": "Selecciona una oficina",
+            "search_office_placeholder": "Buscar oficina...",
         },
         "offices": {
             "title": "Oficinas",

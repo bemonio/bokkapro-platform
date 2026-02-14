@@ -18,6 +18,8 @@ def create_vehicle_endpoint(
         office_id=payload.office_id,
         name=payload.name,
         plate=payload.plate,
+        lat=payload.lat,
+        lng=payload.lng,
         max_capacity=payload.max_capacity,
     )
     return VehicleRead.model_validate(vehicle)

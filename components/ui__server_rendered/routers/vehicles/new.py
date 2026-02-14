@@ -22,6 +22,7 @@ def new_vehicle_form(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
+    office_options = [{"id": office.id, "name": office.name} for office in offices]
     return templates.TemplateResponse(
         request=request,
         name="vehicles/form.html",
@@ -30,9 +31,10 @@ def new_vehicle_form(
             "title": translate(lang, "vehicles.form_new_title"),
             "mode": "create",
             "form_action": "/vehicles/new",
-            "values": {"office_id": "", "name": "", "plate": "", "max_capacity": "0"},
+            "values": {"office_id": "", "name": "", "plate": "", "lat": "", "lng": "", "max_capacity": "0"},
             "errors": {},
             "offices": offices,
+            "office_options": office_options,
             "lang": lang,
         },
     )
@@ -47,6 +49,7 @@ async def create_vehicle_ui(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
+    office_options = [{"id": office.id, "name": office.name} for office in offices]
     form_data = await request.form()
     payload, values, errors = create_from_form(form_data)
     if payload is None:
@@ -61,16 +64,19 @@ async def create_vehicle_ui(
                 "values": values,
                 "errors": errors,
                 "offices": offices,
+                "office_options": office_options,
                 "lang": lang,
             },
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
-    vehicle = create_vehicle(
+    create_vehicle(
         repository=repository,
         office_id=payload.office_id,
         name=payload.name,
         plate=payload.plate,
+        lat=payload.lat,
+        lng=payload.lng,
         max_capacity=payload.max_capacity,
     )
-    return RedirectResponse(url=f"/vehicles/{vehicle.id}?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/vehicles?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)
