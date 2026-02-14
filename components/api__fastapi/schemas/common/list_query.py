@@ -22,12 +22,26 @@ VehicleSortField = Literal[
     "created_at",
     "updated_at",
 ]
+TaskSortField = Literal[
+    "id",
+    "office_id",
+    "type",
+    "status",
+    "priority",
+    "reference",
+    "service_duration_minutes",
+    "load_units",
+    "created_at",
+    "updated_at",
+]
 SortOrder = Literal["asc", "desc"]
 
 DEFAULT_OFFICE_SORT: OfficeSortField = "name"
 DEFAULT_OFFICE_ORDER: SortOrder = "asc"
 DEFAULT_VEHICLE_SORT: VehicleSortField = "name"
 DEFAULT_VEHICLE_ORDER: SortOrder = "asc"
+DEFAULT_TASK_SORT: TaskSortField = "created_at"
+DEFAULT_TASK_ORDER: SortOrder = "desc"
 
 
 class ListQueryParams(BaseModel):
@@ -55,6 +69,17 @@ def get_vehicle_list_query_params(
     search: Annotated[str | None, Query()] = None,
     sort: Annotated[VehicleSortField, Query()] = DEFAULT_VEHICLE_SORT,
     order: Annotated[SortOrder, Query()] = DEFAULT_VEHICLE_ORDER,
+) -> ListQueryParams:
+    normalized_search = " ".join(search.split()) if search is not None else None
+    return ListQueryParams(page=page, page_size=page_size, search=normalized_search or None, sort=sort, order=order)
+
+
+def get_task_list_query_params(
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: Annotated[str | None, Query()] = None,
+    sort: Annotated[TaskSortField, Query()] = DEFAULT_TASK_SORT,
+    order: Annotated[SortOrder, Query()] = DEFAULT_TASK_ORDER,
 ) -> ListQueryParams:
     normalized_search = " ".join(search.split()) if search is not None else None
     return ListQueryParams(page=page, page_size=page_size, search=normalized_search or None, sort=sort, order=order)
