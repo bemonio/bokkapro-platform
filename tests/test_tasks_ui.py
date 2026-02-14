@@ -66,10 +66,11 @@ def test_task_view_shows_google_maps_preview() -> None:
     session.commit()
     session.refresh(task)
 
-    res = client.get(f"/tasks/{task.id}")
+    res = client.get(f"/tasks/{task.uuid}")
     assert res.status_code == 200
     assert 'x-data="taskMap(\'19.43\', \'-99.13\')"' in res.text
     assert "maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}" in res.text
     assert "Google map preview" in res.text
+    assert f"/tasks/{task.id}" not in res.text
 
     app.dependency_overrides.clear()

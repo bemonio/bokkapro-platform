@@ -15,9 +15,9 @@ from components.ui__server_rendered.routers.vehicles._helpers import update_from
 router = APIRouter()
 
 
-@router.get("/{vehicle_id}/edit")
+@router.get("/{vehicle_uuid}/edit")
 def edit_vehicle_form(
-    vehicle_id: int,
+    vehicle_uuid: str,
     request: Request,
     repository: VehicleRepositorySqlModel = Depends(get_vehicle_repository),
     office_repository: OfficeRepositorySqlModel = Depends(get_office_repository),
@@ -25,7 +25,7 @@ def edit_vehicle_form(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        vehicle = get_vehicle(repository=repository, vehicle_uuid=vehicle_id)
+        vehicle = get_vehicle(repository=repository, vehicle_uuid=vehicle_uuid)
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -36,9 +36,10 @@ def edit_vehicle_form(
         name="vehicles/form.html",
         context={
             "request": request,
-            "title": translate(lang, "vehicles.form_edit_title", vehicle_id=vehicle.id),
+            "title": translate(lang, "vehicles.form_edit_title"),
             "mode": "edit",
-            "form_action": f"/vehicles/{vehicle.id}/edit",
+            "entity_uuid": vehicle.uuid,
+            "form_action": f"/vehicles/{vehicle.uuid}/edit",
             "values": {
                 "office_id": str(vehicle.office_id),
                 "office_uuid": "" if selected_office is None else selected_office.uuid,
@@ -55,9 +56,9 @@ def edit_vehicle_form(
     )
 
 
-@router.post("/{vehicle_id}/edit")
+@router.post("/{vehicle_uuid}/edit")
 async def edit_vehicle_ui(
-    vehicle_id: int,
+    vehicle_uuid: str,
     request: Request,
     repository: VehicleRepositorySqlModel = Depends(get_vehicle_repository),
     office_repository: OfficeRepositorySqlModel = Depends(get_office_repository),
@@ -65,7 +66,7 @@ async def edit_vehicle_ui(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        get_vehicle(repository=repository, vehicle_uuid=vehicle_id)
+        get_vehicle(repository=repository, vehicle_uuid=vehicle_uuid)
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -89,9 +90,10 @@ async def edit_vehicle_ui(
             name="vehicles/form.html",
             context={
                 "request": request,
-                "title": translate(lang, "vehicles.form_edit_title", vehicle_id=vehicle_id),
+                "title": translate(lang, "vehicles.form_edit_title"),
                 "mode": "edit",
-                "form_action": f"/vehicles/{vehicle_id}/edit",
+                "entity_uuid": vehicle_uuid,
+                "form_action": f"/vehicles/{vehicle_uuid}/edit",
                 "values": values,
                 "errors": errors,
                 "office_selected": None if selected_office is None else {"uuid": selected_office.uuid, "name": selected_office.name},
@@ -102,7 +104,7 @@ async def edit_vehicle_ui(
 
     vehicle = update_vehicle(
         repository=repository,
-        vehicle_uuid=vehicle_id,
+        vehicle_uuid=vehicle_uuid,
         office_id=payload.office_id,
         name=payload.name,
         plate=payload.plate,
@@ -110,4 +112,4 @@ async def edit_vehicle_ui(
         lng=payload.lng,
         max_capacity=payload.max_capacity,
     )
-    return RedirectResponse(url=f"/vehicles/{vehicle.id}?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)
+    return RedirectResponse(url=f"/vehicles/{vehicle.uuid}?lang={lang}", status_code=status.HTTP_303_SEE_OTHER)

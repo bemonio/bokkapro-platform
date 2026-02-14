@@ -32,8 +32,9 @@ def edit_office_form(
         name="offices/form.html",
         context={
             "request": request,
-            "title": translate(lang, "offices.form_edit_title", office_id=office.id),
+            "title": translate(lang, "offices.form_edit_title"),
             "mode": "edit",
+            "entity_uuid": office.uuid,
             "form_action": f"/offices/{office.uuid}/edit",
             "values": {
                 "name": office.name,
@@ -72,8 +73,9 @@ async def edit_office_ui(
             name="offices/form.html",
             context={
                 "request": request,
-                "title": translate(lang, "offices.form_edit_title", office_id=office.id),
+                "title": translate(lang, "offices.form_edit_title"),
                 "mode": "edit",
+            "entity_uuid": office.uuid,
                 "form_action": f"/offices/{office_uuid}/edit",
                 "values": values,
                 "errors": errors,
