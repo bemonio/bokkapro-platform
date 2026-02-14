@@ -41,3 +41,35 @@ def test_tasks_ui_list_and_i18n() -> None:
     assert "lang=es" in res.text
 
     app.dependency_overrides.clear()
+
+
+def test_task_view_shows_google_maps_preview() -> None:
+    client, session = _build_client()
+
+    office = OfficeModel(name="Centro", address="Calle 1", storage_capacity=10)
+    session.add(office)
+    session.commit()
+    session.refresh(office)
+
+    task = TaskModel(
+        office_id=office.id,
+        type="delivery",
+        status="pending",
+        lat=19.43,
+        lng=-99.13,
+        reference="T-002",
+        priority="normal",
+        load_units=2,
+        service_duration_minutes=15,
+    )
+    session.add(task)
+    session.commit()
+    session.refresh(task)
+
+    res = client.get(f"/tasks/{task.id}")
+    assert res.status_code == 200
+    assert 'x-data="taskMap(\'19.43\', \'-99.13\')"' in res.text
+    assert "maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}" in res.text
+    assert "Google map preview" in res.text
+
+    app.dependency_overrides.clear()
