@@ -39,3 +39,15 @@ def test_docs_enabled_with_env_flag():
     assert docs_response.status_code == 200
     assert redoc_response.status_code == 200
     assert openapi_response.status_code == 200
+
+
+def test_ui_routes_not_in_openapi_schema_when_docs_enabled():
+    app = _load_app(swagger_enabled=True)
+    client = TestClient(app)
+
+    openapi_response = client.get("/openapi.json")
+
+    assert openapi_response.status_code == 200
+    paths = openapi_response.json().get("paths", {})
+    assert not any(path == "/" or path.startswith("/offices") for path in paths)
+    assert "/api/offices" in paths

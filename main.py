@@ -21,4 +21,4 @@ def health() -> dict[str, str]:
 
 app.include_router(offices_router)
 
-app.include_router(ui_router)
+app.include_router(ui_router, include_in_schema=False)
