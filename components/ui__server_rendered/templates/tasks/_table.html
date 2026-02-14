@@ -13,10 +13,10 @@
       {% for task in tasks %}
       <tr class="border-t border-slate-200">
         <td class="px-4 py-3">{{ task.reference or task.uuid[:8] }}</td>
-        <td class="px-4 py-3">{{ task.type }}</td>
-        <td class="px-4 py-3">{{ task.status }}</td>
+        <td class="px-4 py-3">{{ t(lang, "tasks.type_" ~ task.type) }}</td>
+        <td class="px-4 py-3">{{ t(lang, "tasks.status_" ~ task.status) }}</td>
         <td class="px-4 py-3">{{ task.office_name or "—" }}</td>
-        <td class="px-4 py-3">{{ task.priority }}</td>
+        <td class="px-4 py-3">{{ t(lang, "tasks.priority_" ~ task.priority) }}</td>
         <td class="px-4 py-3"><div class="flex gap-2 justify-end" x-data="{ openDeleteModal: false }" @keydown.escape.window="openDeleteModal = false">
             <a href="{{ url_with_lang('/tasks/' ~ task.id, lang=lang) }}" class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100">{{ t(lang, "tasks.view") }}</a>
             <a href="{{ url_with_lang('/tasks/' ~ task.id ~ '/edit', lang=lang) }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">{{ t(lang, "tasks.edit") }}</a>

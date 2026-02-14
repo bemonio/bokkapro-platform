@@ -36,7 +36,7 @@ def test_tasks_ui_list_and_i18n() -> None:
     res = client.get("/tasks?lang=es")
     assert res.status_code == 200
     assert "Tareas" in res.text
-    assert "delivery" in res.text
+    assert "Entrega" in res.text
     assert "Centro" in res.text
     assert "lang=es" in res.text
 
