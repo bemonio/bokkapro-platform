@@ -3,7 +3,6 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_vehicle_repository
-from components.app__office.use_cases.list_offices import list_offices
 from components.app__vehicle.use_cases.create_vehicle import create_vehicle
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 from components.persistence__sqlmodel.repositories.vehicles_repo import VehicleRepositorySqlModel
@@ -17,12 +16,9 @@ router = APIRouter()
 @router.get("/new")
 def new_vehicle_form(
     request: Request,
-    office_repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
     return templates.TemplateResponse(
         request=request,
         name="vehicles/form.html",
@@ -31,10 +27,9 @@ def new_vehicle_form(
             "title": translate(lang, "vehicles.form_new_title"),
             "mode": "create",
             "form_action": "/vehicles/new",
-            "values": {"office_id": "", "name": "", "plate": "", "lat": "", "lng": "", "max_capacity": "0"},
+            "values": {"office_id": "", "office_uuid": "", "name": "", "plate": "", "lat": "", "lng": "", "max_capacity": "0"},
             "errors": {},
-            "offices": offices,
-            "office_options": office_options,
+            "office_selected": None,
             "lang": lang,
         },
     )
@@ -48,11 +43,21 @@ async def create_vehicle_ui(
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
     form_data = await request.form()
-    payload, values, errors = create_from_form(form_data)
-    if payload is None:
+    office_uuid = str(form_data.get("office_uuid") or "").strip()
+    mutable_form_data = dict(form_data)
+    selected_office = None
+
+    if office_uuid:
+        selected_office = office_repository.get_by_uuid(office_uuid)
+        if selected_office is not None:
+            mutable_form_data["office_id"] = str(selected_office.id)
+
+    payload, values, errors = create_from_form(mutable_form_data)
+    if selected_office is None:
+        errors["office_id"] = translate(lang, "vehicles.office_not_found")
+
+    if payload is None or selected_office is None:
         return templates.TemplateResponse(
             request=request,
             name="vehicles/form.html",
@@ -63,8 +68,7 @@ async def create_vehicle_ui(
                 "form_action": "/vehicles/new",
                 "values": values,
                 "errors": errors,
-                "offices": offices,
-                "office_options": office_options,
+                "office_selected": None if selected_office is None else {"uuid": selected_office.uuid, "name": selected_office.name},
                 "lang": lang,
             },
             status_code=status.HTTP_400_BAD_REQUEST,

@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_vehicle_repository
-from components.app__office.use_cases.list_offices import list_offices
 from components.app__vehicle.use_cases.get_vehicle import get_vehicle
 from components.domain__vehicle.errors import VehicleNotFoundError
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
@@ -27,8 +26,7 @@ def view_vehicle(
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
+    selected_office = office_repository.get(vehicle.office_id)
 
     return templates.TemplateResponse(
         request=request,
@@ -40,6 +38,7 @@ def view_vehicle(
             "form_action": "#",
             "values": {
                 "office_id": str(vehicle.office_id),
+                "office_uuid": "" if selected_office is None else selected_office.uuid,
                 "name": vehicle.name,
                 "plate": vehicle.plate or "",
                 "lat": "" if vehicle.lat is None else str(vehicle.lat),
@@ -47,8 +46,7 @@ def view_vehicle(
                 "max_capacity": str(vehicle.max_capacity),
             },
             "errors": {},
-            "offices": offices,
-            "office_options": office_options,
+            "office_selected": None if selected_office is None else {"uuid": selected_office.uuid, "name": selected_office.name},
             "lang": lang,
         },
     )

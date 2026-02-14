@@ -3,7 +3,6 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_vehicle_repository
-from components.app__office.use_cases.list_offices import list_offices
 from components.app__vehicle.use_cases.get_vehicle import get_vehicle
 from components.app__vehicle.use_cases.update_vehicle import update_vehicle
 from components.domain__vehicle.errors import VehicleNotFoundError
@@ -30,8 +29,8 @@ def edit_vehicle_form(
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
+    selected_office = office_repository.get(vehicle.office_id)
+
     return templates.TemplateResponse(
         request=request,
         name="vehicles/form.html",
@@ -42,6 +41,7 @@ def edit_vehicle_form(
             "form_action": f"/vehicles/{vehicle.id}/edit",
             "values": {
                 "office_id": str(vehicle.office_id),
+                "office_uuid": "" if selected_office is None else selected_office.uuid,
                 "name": vehicle.name,
                 "plate": vehicle.plate or "",
                 "lat": "" if vehicle.lat is None else str(vehicle.lat),
@@ -49,8 +49,7 @@ def edit_vehicle_form(
                 "max_capacity": str(vehicle.max_capacity),
             },
             "errors": {},
-            "offices": offices,
-            "office_options": office_options,
+            "office_selected": None if selected_office is None else {"uuid": selected_office.uuid, "name": selected_office.name},
             "lang": lang,
         },
     )
@@ -65,16 +64,26 @@ async def edit_vehicle_ui(
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
     try:
         get_vehicle(repository=repository, vehicle_uuid=vehicle_id)
     except VehicleNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     form_data = await request.form()
-    payload, values, errors = update_from_form(form_data)
-    if payload is None:
+    office_uuid = str(form_data.get("office_uuid") or "").strip()
+    mutable_form_data = dict(form_data)
+    selected_office = None
+
+    if office_uuid:
+        selected_office = office_repository.get_by_uuid(office_uuid)
+        if selected_office is not None:
+            mutable_form_data["office_id"] = str(selected_office.id)
+
+    payload, values, errors = update_from_form(mutable_form_data)
+    if selected_office is None:
+        errors["office_id"] = translate(lang, "vehicles.office_not_found")
+
+    if payload is None or selected_office is None:
         return templates.TemplateResponse(
             request=request,
             name="vehicles/form.html",
@@ -85,8 +94,7 @@ async def edit_vehicle_ui(
                 "form_action": f"/vehicles/{vehicle_id}/edit",
                 "values": values,
                 "errors": errors,
-                "offices": offices,
-                "office_options": office_options,
+                "office_selected": None if selected_office is None else {"uuid": selected_office.uuid, "name": selected_office.name},
                 "lang": lang,
             },
             status_code=status.HTTP_400_BAD_REQUEST,
