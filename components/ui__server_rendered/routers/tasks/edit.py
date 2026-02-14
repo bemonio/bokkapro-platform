@@ -3,9 +3,10 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from components.api__fastapi.dependencies import get_office_repository, get_task_repository
-from components.app__office.use_cases.list_offices import list_offices
+from components.app__office.use_cases.get_office import get_office
 from components.app__task.use_cases.get_task import get_task
 from components.app__task.use_cases.update_task import update_task
+from components.domain__office.errors import OfficeNotFoundError
 from components.domain__task.errors import TaskNotFoundError
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 from components.persistence__sqlmodel.repositories.tasks_repo import TaskRepositorySqlModel
@@ -28,8 +29,18 @@ def edit_task_form(
     task = get_task(repository=repository, task_uuid=task_uuid)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    offices, _ = list_offices(repository=office_repository, page=1, page_size=100, search=None, sort="name", order="asc")
-    office_options = [{"id": office.id, "name": office.name} for office in offices]
+
+    office_name = ""
+    if task.office_id is not None:
+        try:
+            office = get_office(repository=office_repository, office_uuid=task.office_id)
+            office_name = office.name
+        except OfficeNotFoundError:
+            office_name = ""
+
+    values = {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]}
+    values["office_name"] = office_name
+
     return templates.TemplateResponse(
         request=request,
         name="tasks/form.html",
@@ -41,7 +52,6 @@ def edit_task_form(
             "form_action": f"/tasks/{task.uuid}/edit",
             "values": {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]},
             "errors": {},
-            "office_options": office_options,
             "lang": lang,
         },
     )
@@ -52,7 +62,6 @@ async def edit_task_ui(
     task_uuid: str,
     request: Request,
     repository: TaskRepositorySqlModel = Depends(get_task_repository),
-    office_repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
