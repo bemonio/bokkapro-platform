@@ -1,59 +1,76 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="w-full" x-data='vehicleForm("{{ values.office_uuid|default("") }}", {{ office_selected|tojson }}, "{{ values.lat }}", "{{ values.lng }}", "{{ lang }}")'>
+<div
+  class="w-full"
+  x-data="vehicleForm({
+    initialLat: '{{ values.lat }}',
+    initialLng: '{{ values.lng }}',
+    initialOfficeUuid: '{{ values.office_uuid|default('') }}',
+    initialOfficeName: '{{ values.office_name|default('') }}',
+    lang: '{{ lang }}'
+  })"
+>
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
   {% if entity_uuid %}<p class="-mt-4 mb-6 break-all text-[10px] text-slate-400">{{ entity_uuid }}</p>{% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
     <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
-      <div>
-        <label for="office-search" class="block text-sm font-medium mb-1">{{ t(lang, "vehicles.office") }}</label>
-        <input type="hidden" name="office_uuid" :value="officeUuid" />
-        <div class="relative">
-          <input
-            id="office-search"
-            type="text"
-            x-model="officeSearch"
-            @focus="openOfficeDropdown()"
-            @input.debounce.350ms="onOfficeSearchChanged()"
-            @keydown.arrow-down.prevent="highlightNextOffice()"
-            @keydown.arrow-up.prevent="highlightPreviousOffice()"
-            @keydown.enter.prevent="selectHighlightedOffice()"
-            @keydown.escape.prevent="closeOfficeDropdown()"
-            @click.away="closeOfficeDropdown()"
-            :aria-expanded="officeDropdownOpen"
-            aria-haspopup="listbox"
-            aria-controls="office-options-list"
-            placeholder="{{ t(lang, 'vehicles.search_office_placeholder') }}"
-            class="w-full rounded-md border border-slate-300 px-3 py-2"
-            {% if mode == 'view' %}disabled{% endif %}
-          />
-          <div
-            id="office-options-list"
-            x-show="officeDropdownOpen"
-            x-transition
-            @scroll.passive="onOfficeDropdownScroll($event)"
-            role="listbox"
-            class="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg"
-            style="display: none;"
-          >
-            <template x-for="(office, index) in officeOptions" :key="office.uuid">
+      <div class="relative">
+        <label class="block text-sm font-medium mb-1" for="office-search-input">{{ t(lang, "vehicles.office") }}</label>
+        <input type="hidden" name="office_uuid" :value="selectedOfficeUuid" />
+        <input type="hidden" name="office_name" :value="selectedOfficeName" />
+        <button
+          id="office-search-input"
+          type="button"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
+          :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
+          @click="toggleOfficeDropdown()"
+          @keydown.down.prevent="openOfficeDropdown()"
+          @keydown.enter.prevent="toggleOfficeDropdown()"
+          @keydown.esc.prevent="closeOfficeDropdown()"
+          :aria-expanded="officeOpen"
+          aria-haspopup="listbox"
+          {% if mode == 'view' %}disabled{% endif %}
+        >
+          <span class="truncate" x-text="selectedOfficeName || officeTexts.placeholder"></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+
+        <p class="text-xs text-red-600 mt-1" x-show="officeError" x-text="officeError"></p>
+
+        <div
+          x-show="officeOpen"
+          @click.outside="closeOfficeDropdown()"
+          class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg"
+          x-cloak
+        >
+          <div class="p-2 border-b border-slate-200">
+            <input
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2"
+              :placeholder="officeTexts.searchPlaceholder"
+              x-model="officeSearch"
+              @input="onOfficeSearchInput()"
+              @keydown.esc.prevent="closeOfficeDropdown()"
+            />
+          </div>
+
+          <div class="max-h-60 overflow-auto" @scroll="onOfficeDropdownScroll($event)" role="listbox" aria-label="Office options">
+            <template x-for="office in officeItems" :key="office.uuid">
               <button
                 type="button"
-                role="option"
-                :aria-selected="office.uuid === officeUuid"
-                @mouseenter="highlightedOfficeIndex = index"
+                class="w-full text-left px-3 py-2 hover:bg-slate-100"
                 @click="selectOffice(office)"
-                class="block w-full px-3 py-2 text-left text-sm hover:bg-slate-100"
-                :class="{ 'bg-slate-100': index === highlightedOfficeIndex, 'font-medium text-slate-900': office.uuid === officeUuid }"
-                x-text="office.name"
-              ></button>
+                :class="{ 'bg-slate-100': String(selectedOfficeUuid) === String(office.uuid) }"
+              >
+                <span x-text="office.name"></span>
+              </button>
             </template>
 
-            <p x-show="officeLoading" class="px-3 py-2 text-sm text-slate-500">{{ t(lang, "common.loading") if t is defined else "Loading..." }}</p>
-            <p x-show="officeError" class="px-3 py-2 text-sm text-red-700" x-text="officeError"></p>
-            <p x-show="!officeLoading && !officeError && officeOptions.length === 0" class="px-3 py-2 text-sm text-slate-500">{{ t(lang, "common.no_results") if t is defined else "No results" }}</p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingOffices" x-text="officeTexts.loading"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="officeError && !isFetchingOffices" x-text="officeError"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingOffices && !officeError && officeItems.length === 0" x-text="officeTexts.noResults"></p>
           </div>
         </div>
         {% if errors.office_id %}<p class="text-sm text-red-700 mt-1">{{ errors.office_id }}</p>{% endif %}
@@ -109,20 +126,25 @@
 </div>
 
 <script>
-  function vehicleForm(initialOfficeUuid, initialOffice, initialLat, initialLng, lang) {
+  function vehicleForm({ initialLat, initialLng, initialOfficeUuid, initialOfficeName, lang }) {
     return {
-      officeUuid: initialOfficeUuid || "",
-      officeSearch: initialOffice?.name || "",
-      officeOptions: initialOffice ? [initialOffice] : [],
-      officeDropdownOpen: false,
-      officeLoading: false,
+      officeOpen: false,
+      officeSearch: "",
+      officeItems: [],
+      selectedOfficeUuid: initialOfficeUuid || "",
+      selectedOfficeName: initialOfficeName || "",
+      officePage: 1,
+      officeHasNext: true,
+      isFetchingOffices: false,
       officeError: "",
-      highlightedOfficeIndex: 0,
-      officeCurrentPage: 1,
-      officeHasNextPage: true,
-      officeRequestCounter: 0,
-      officeLoadedForEmptySearch: false,
-      officeLastSearch: "",
+      officeDebounceTimer: null,
+      officeTexts: {
+        placeholder: "{{ t(lang, 'tasks.select_office') }}",
+        searchPlaceholder: "{{ t(lang, 'vehicles.search_office_placeholder') }}",
+        loading: "{{ t(lang, 'common.loading') }}",
+        noResults: "{{ t(lang, 'common.no_results') }}",
+        fetchError: "{{ t(lang, 'tasks.office_load_error') }}",
+      },
       lat: initialLat || "",
       lng: initialLng || "",
       mapUrl: "",
@@ -131,119 +153,105 @@
         this.refreshMap();
       },
 
-      openOfficeDropdown() {
-        this.officeDropdownOpen = true;
-        if (!this.officeLoadedForEmptySearch && !this.officeSearch.trim()) {
-          this.fetchOffices({ reset: true });
+      toggleOfficeDropdown() {
+        if (this.officeOpen) {
+          this.closeOfficeDropdown();
           return;
         }
-        if (!this.officeOptions.length) {
-          this.fetchOffices({ reset: true });
+        this.openOfficeDropdown();
+      },
+      openOfficeDropdown() {
+        this.officeOpen = true;
+        if (this.officeItems.length === 0) {
+          this.resetOffices();
+          this.fetchOffices();
         }
       },
-
       closeOfficeDropdown() {
-        this.officeDropdownOpen = false;
+        this.officeOpen = false;
       },
-
-      onOfficeSearchChanged() {
-        this.fetchOffices({ reset: true });
+      onOfficeSearchInput() {
+        clearTimeout(this.officeDebounceTimer);
+        this.officeDebounceTimer = setTimeout(() => {
+          this.resetOffices();
+          this.fetchOffices();
+        }, 350);
       },
-
       onOfficeDropdownScroll(event) {
-        const el = event.target;
-        const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+        const target = event.target;
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
         if (nearBottom) {
-          this.fetchOffices({ reset: false });
+          this.fetchOffices();
         }
       },
-
-      async fetchOffices({ reset }) {
-        if (this.officeLoading) return;
-        if (!reset && !this.officeHasNextPage) return;
-
-        const search = this.officeSearch.trim();
-        if (reset) {
-          this.officeCurrentPage = 1;
-          this.officeHasNextPage = true;
-          this.officeError = "";
-          this.officeOptions = this.officeUuid && initialOffice ? [initialOffice] : [];
-          this.highlightedOfficeIndex = 0;
+      resetOffices() {
+        this.officePage = 1;
+        this.officeHasNext = true;
+        this.officeItems = [];
+        this.officeError = "";
+      },
+      async fetchOffices() {
+        if (this.isFetchingOffices || !this.officeHasNext) {
+          return;
         }
 
-        this.officeLoading = true;
-        const requestId = ++this.officeRequestCounter;
-        const page = reset ? 1 : this.officeCurrentPage + 1;
-        const params = new URLSearchParams({
-          page: String(page),
+        this.isFetchingOffices = true;
+        this.officeError = "";
+
+        const query = new URLSearchParams({
+          page: String(this.officePage),
           page_size: "20",
-          search,
+          search: this.officeSearch,
           sort: "name",
           order: "asc",
         });
 
         try {
-          const response = await fetch(`/api/offices?${params.toString()}`);
+          const response = await fetch(`/api/offices?${query.toString()}`);
           if (!response.ok) {
-            throw new Error(lang === "es" ? "No se pudieron cargar oficinas" : "Could not load offices");
-          }
-          const body = await response.json();
-          if (requestId !== this.officeRequestCounter) return;
-
-          const incoming = (body.data || []).map((office) => ({ uuid: office.uuid, name: office.name }));
-          const existingByUuid = new Map(this.officeOptions.map((item) => [item.uuid, item]));
-          incoming.forEach((item) => existingByUuid.set(item.uuid, item));
-
-          this.officeOptions = Array.from(existingByUuid.values()).sort((a, b) => a.name.localeCompare(b.name));
-          this.officeCurrentPage = page;
-          this.officeLastSearch = search;
-          this.officeHasNextPage = Boolean(body.meta?.pagination?.hasNext);
-          this.officeLoadedForEmptySearch = this.officeLoadedForEmptySearch || search.length === 0;
-
-          if (this.officeUuid && !existingByUuid.has(this.officeUuid) && initialOffice?.uuid === this.officeUuid) {
-            this.officeOptions.unshift(initialOffice);
+            throw new Error(`Request failed with ${response.status}`);
           }
 
-          if (!this.officeUuid && this.officeOptions.length > 0 && reset) {
-            this.highlightedOfficeIndex = 0;
+          const payload = await response.json();
+          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+          const byUuid = new Map(this.officeItems.map((item) => [item.uuid, item]));
+
+          incomingItems.forEach((item) => {
+            if (!byUuid.has(item.uuid)) {
+              byUuid.set(item.uuid, item);
+            }
+          });
+
+          if (this.selectedOfficeUuid && this.selectedOfficeName) {
+            const hasSelected = Array.from(byUuid.values()).some((item) => String(item.uuid) === String(this.selectedOfficeUuid));
+            if (!hasSelected) {
+              byUuid.set(`selected-${this.selectedOfficeUuid}`, {
+                uuid: this.selectedOfficeUuid,
+                name: this.selectedOfficeName,
+              });
+            }
           }
-        } catch (error) {
-          if (requestId === this.officeRequestCounter) {
-            this.officeError = error.message || (lang === "es" ? "Error al buscar oficinas" : "Error searching offices");
+
+          this.officeItems = Array.from(byUuid.values());
+
+          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
+          this.officeHasNext = Boolean(meta && meta.hasNext);
+          if (incomingItems.length > 0) {
+            this.officePage += 1;
+          } else {
+            this.officeHasNext = false;
           }
+        } catch (_error) {
+          this.officeError = this.officeTexts.fetchError;
         } finally {
-          if (requestId === this.officeRequestCounter) {
-            this.officeLoading = false;
-          }
+          this.isFetchingOffices = false;
         }
       },
-
       selectOffice(office) {
-        this.officeUuid = office.uuid;
-        this.officeSearch = office.name;
+        this.selectedOfficeUuid = office.uuid;
+        this.selectedOfficeName = office.name;
         this.closeOfficeDropdown();
       },
-
-      highlightNextOffice() {
-        if (!this.officeDropdownOpen) this.openOfficeDropdown();
-        if (!this.officeOptions.length) return;
-        this.highlightedOfficeIndex = Math.min(this.highlightedOfficeIndex + 1, this.officeOptions.length - 1);
-      },
-
-      highlightPreviousOffice() {
-        if (!this.officeDropdownOpen) this.openOfficeDropdown();
-        if (!this.officeOptions.length) return;
-        this.highlightedOfficeIndex = Math.max(this.highlightedOfficeIndex - 1, 0);
-      },
-
-      selectHighlightedOffice() {
-        if (!this.officeDropdownOpen || !this.officeOptions.length) return;
-        const office = this.officeOptions[this.highlightedOfficeIndex];
-        if (office) {
-          this.selectOffice(office);
-        }
-      },
-
       refreshMap() {
         const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
         const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
