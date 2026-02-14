@@ -1,47 +1,83 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="max-w-2xl">
+<div class="w-full" x-data="officeMap('{{ values.lat }}', '{{ values.lng }}')">
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
 
-  <form method="post" action="{{ form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
-    <div>
-      <label class="block text-sm font-medium mb-1">Name</label>
-      <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-      {% if errors.name %}<p class="text-sm text-red-700 mt-1">{{ errors.name }}</p>{% endif %}
-    </div>
-
-    <div>
-      <label class="block text-sm font-medium mb-1">Address</label>
-      <input type="text" name="address" value="{{ values.address }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-      {% if errors.address %}<p class="text-sm text-red-700 mt-1">{{ errors.address }}</p>{% endif %}
-    </div>
-
-    <div class="grid sm:grid-cols-2 gap-4">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <form method="post" action="{{ form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
       <div>
-        <label class="block text-sm font-medium mb-1">Latitude</label>
-        <input type="number" step="any" name="lat" value="{{ values.lat }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-        {% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}
+        <label class="block text-sm font-medium mb-1">Name</label>
+        <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        {% if errors.name %}<p class="text-sm text-red-700 mt-1">{{ errors.name }}</p>{% endif %}
       </div>
+
       <div>
-        <label class="block text-sm font-medium mb-1">Longitude</label>
-        <input type="number" step="any" name="lng" value="{{ values.lng }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-        {% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}
+        <label class="block text-sm font-medium mb-1">Address</label>
+        <input type="text" name="address" value="{{ values.address }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        {% if errors.address %}<p class="text-sm text-red-700 mt-1">{{ errors.address }}</p>{% endif %}
       </div>
-    </div>
 
-    <div>
-      <label class="block text-sm font-medium mb-1">Storage Capacity</label>
-      <input type="number" min="0" name="storage_capacity" value="{{ values.storage_capacity }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
-      {% if errors.storage_capacity %}<p class="text-sm text-red-700 mt-1">{{ errors.storage_capacity }}</p>{% endif %}
-    </div>
+      <div class="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Latitude</label>
+          <input type="number" step="any" name="lat" value="{{ values.lat }}" class="w-full rounded-md border border-slate-300 px-3 py-2" x-model="lat" @input.debounce.300ms="refreshMap()" {% if mode == 'view' %}disabled{% endif %} />
+          {% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Longitude</label>
+          <input type="number" step="any" name="lng" value="{{ values.lng }}" class="w-full rounded-md border border-slate-300 px-3 py-2" x-model="lng" @input.debounce.300ms="refreshMap()" {% if mode == 'view' %}disabled{% endif %} />
+          {% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}
+        </div>
+      </div>
 
-    <div class="flex gap-3 pt-2">
-      <a href="/offices" class="px-4 py-2 border border-slate-300 rounded-md">Back</a>
-      {% if mode != 'view' %}
-      <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">Save</button>
-      {% endif %}
-    </div>
-  </form>
+      <div>
+        <label class="block text-sm font-medium mb-1">Storage Capacity</label>
+        <input type="number" min="0" name="storage_capacity" value="{{ values.storage_capacity }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        {% if errors.storage_capacity %}<p class="text-sm text-red-700 mt-1">{{ errors.storage_capacity }}</p>{% endif %}
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <a href="/offices" class="px-4 py-2 border border-slate-300 rounded-md">Back</a>
+        {% if mode != 'view' %}
+        <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">Save</button>
+        {% endif %}
+      </div>
+    </form>
+
+    <section class="bg-white border border-slate-200 rounded-lg p-3 lg:sticky lg:top-4">
+      <h2 class="text-base font-semibold mb-3">Ubicación en mapa</h2>
+      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50">
+        <iframe
+          title="Google map preview"
+          class="h-full w-full"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          :src="mapUrl"
+        ></iframe>
+      </div>
+      <p class="text-xs text-slate-500 mt-2">
+        Mostrando coordenadas: <span x-text="lat || '0'"></span>, <span x-text="lng || '0'"></span>
+      </p>
+    </section>
+  </div>
 </div>
+
+<script>
+  function officeMap(initialLat, initialLng) {
+    return {
+      lat: initialLat || "",
+      lng: initialLng || "",
+      mapUrl: "",
+      init() {
+        this.refreshMap();
+      },
+      refreshMap() {
+        const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
+        const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
+        this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&z=15&output=embed`;
+      },
+    };
+  }
+</script>
 {% endblock %}
