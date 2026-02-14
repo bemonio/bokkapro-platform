@@ -94,6 +94,16 @@ class OfficeRepositorySqlModel(OfficeRepository):
             return None
         return self._to_entity(model)
 
+    def get_by_uuid(self, office_uuid: str) -> Office | None:
+        stmt = select(OfficeModel).where(
+            OfficeModel.uuid == office_uuid,
+            OfficeModel.deleted_at.is_(None),
+        )
+        model = self.session.exec(stmt).first()
+        if model is None:
+            return None
+        return self._to_entity(model)
+
     def create(self, office: Office) -> Office:
         model = self._to_model(office)
         self.session.add(model)

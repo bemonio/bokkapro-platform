@@ -9,16 +9,16 @@ from components.persistence__sqlmodel.repositories.offices_repo import OfficeRep
 router = APIRouter()
 
 
-@router.put("/offices/{office_id}", response_model=OfficeRead)
+@router.put("/offices/{office_uuid}", response_model=OfficeRead)
 def update_office_endpoint(
-    office_id: int,
+    office_uuid: str,
     payload: OfficeUpdate,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
 ) -> OfficeRead:
     try:
         office = update_office(
             repository=repository,
-            office_id=office_id,
+            office_uuid=office_uuid,
             name=payload.name,
             address=payload.address,
             lat=payload.lat,

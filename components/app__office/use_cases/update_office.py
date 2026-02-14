@@ -6,7 +6,7 @@ from components.domain__office.errors import OfficeNotFoundError
 
 def update_office(
     repository: OfficeRepository,
-    office_id: int,
+    office_uuid: str | int,
     *,
     name: str | None = None,
     address: str | None = None,
@@ -14,9 +14,9 @@ def update_office(
     lng: float | None = None,
     storage_capacity: int | None = None,
 ) -> Office:
-    office = repository.get(office_id)
+    office = repository.get(office_uuid) if isinstance(office_uuid, int) else repository.get_by_uuid(office_uuid)
     if office is None:
-        raise OfficeNotFoundError(f"Office {office_id} not found")
+        raise OfficeNotFoundError(f"Office {office_uuid} not found")
 
     if name is not None:
         office.name = name
