@@ -2,8 +2,8 @@
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
-  <h1 class="text-2xl font-bold">Offices</h1>
-  <a href="/offices/new" class="bg-slate-900 text-white text-sm px-4 py-2 rounded-md">New Office</a>
+  <h1 class="text-2xl font-bold">{{ t(lang, "offices.title") }}</h1>
+  <a href="{{ url_with_lang('/offices/new', lang=lang) }}" class="bg-slate-900 text-white text-sm px-4 py-2 rounded-md">{{ t(lang, "offices.new_office") }}</a>
 </div>
 
 <form
@@ -14,12 +14,13 @@
   hx-target="#offices-table"
   hx-push-url="true"
 >
+  <input type="hidden" name="lang" value="{{ lang }}" />
   <div class="flex gap-2">
     <input
       type="text"
       name="search"
       value="{{ search }}"
-      placeholder="Search offices..."
+      placeholder="{{ t(lang, 'offices.search_placeholder') }}"
       class="w-full rounded-md border border-slate-300 px-3 py-2"
       hx-trigger="keyup changed delay:300ms, search"
       hx-get="/offices"
@@ -31,7 +32,7 @@
     <input type="hidden" name="order" value="{{ order }}" />
     <select name="page_size" class="rounded-md border border-slate-300 px-3 py-2" onchange="this.form.requestSubmit()">
       {% for size in [5, 10, 20, 50] %}
-      <option value="{{ size }}" {% if pagination.page_size == size %}selected{% endif %}>{{ size }} / page</option>
+      <option value="{{ size }}" {% if pagination.page_size == size %}selected{% endif %}>{{ t(lang, "offices.page_size", size=size) }}</option>
       {% endfor %}
     </select>
   </div>

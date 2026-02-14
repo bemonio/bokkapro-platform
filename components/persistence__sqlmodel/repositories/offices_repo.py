@@ -64,16 +64,14 @@ class OfficeRepositorySqlModel(OfficeRepository):
 
         normalized_search = " ".join(search.split()) if search is not None else None
         if normalized_search:
-            tokens = normalized_search.split(" ")
-            for token in tokens:
-                term = f"%{token}%"
-                token_clause = or_(
-                    OfficeModel.name.ilike(term),
-                    OfficeModel.address.ilike(term),
-                    OfficeModel.uuid.ilike(term),
-                )
-                stmt = stmt.where(token_clause)
-                count_stmt = count_stmt.where(token_clause)
+            term = f"%{normalized_search}%"
+            search_clause = or_(
+                OfficeModel.name.ilike(term),
+                OfficeModel.address.ilike(term),
+                OfficeModel.uuid.ilike(term),
+            )
+            stmt = stmt.where(search_clause)
+            count_stmt = count_stmt.where(search_clause)
 
         stmt = apply_sorting(
             stmt,
