@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
-from sqlmodel import SQLModel, Session, create_engine
+from sqlmodel import SQLModel, Session, create_engine, select
 
 from bases.platform.db import get_session
 from components.persistence__sqlmodel.models.office import OfficeModel
@@ -54,8 +54,11 @@ def test_offices_ui_crud_and_htmx_partial() -> None:
     assert "<table" in search_partial_res.text
     assert "<html" not in search_partial_res.text
 
+    with Session(engine) as session:
+        office_uuid = session.exec(select(OfficeModel)).one().uuid
+
     edit_res = client.post(
-        "/offices/1/edit",
+        f"/offices/{office_uuid}/edit",
         data={
             "name": "Central Updated",
             "address": "100 Main St",
@@ -67,12 +70,12 @@ def test_offices_ui_crud_and_htmx_partial() -> None:
     )
     assert edit_res.status_code == 303
 
-    view_res = client.get("/offices/1")
+    view_res = client.get(f"/offices/{office_uuid}")
     assert view_res.status_code == 200
     assert "Central Updated" in view_res.text
     assert "disabled" in view_res.text
 
-    delete_res = client.post("/offices/1/delete", follow_redirects=False)
+    delete_res = client.post(f"/offices/{office_uuid}/delete", follow_redirects=False)
     assert delete_res.status_code == 303
 
     after_delete_res = client.get("/offices")

@@ -10,14 +10,14 @@ from components.ui__server_rendered.dependencies import get_locale
 router = APIRouter()
 
 
-@router.post("/{office_id}/delete")
+@router.post("/{office_uuid}/delete")
 def delete_office_ui(
-    office_id: int,
+    office_uuid: str,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
 ):
     try:
-        delete_office(repository=repository, office_uuid=office_id)
+        delete_office(repository=repository, office_uuid=office_uuid)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 

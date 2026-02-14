@@ -14,16 +14,16 @@ from components.ui__server_rendered.routers.offices._helpers import update_from_
 router = APIRouter()
 
 
-@router.get("/{office_id}/edit")
+@router.get("/{office_uuid}/edit")
 def edit_office_form(
-    office_id: int,
+    office_uuid: str,
     request: Request,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        office = get_office(repository=repository, office_uuid=office_id)
+        office = get_office(repository=repository, office_uuid=office_uuid)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -34,7 +34,7 @@ def edit_office_form(
             "request": request,
             "title": translate(lang, "offices.form_edit_title", office_id=office.id),
             "mode": "edit",
-            "form_action": f"/offices/{office.id}/edit",
+            "form_action": f"/offices/{office.uuid}/edit",
             "values": {
                 "name": office.name,
                 "address": office.address or "",
@@ -48,16 +48,16 @@ def edit_office_form(
     )
 
 
-@router.post("/{office_id}/edit")
+@router.post("/{office_uuid}/edit")
 async def edit_office_ui(
-    office_id: int,
+    office_uuid: str,
     request: Request,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        get_office(repository=repository, office_uuid=office_id)
+        office = get_office(repository=repository, office_uuid=office_uuid)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
@@ -72,9 +72,9 @@ async def edit_office_ui(
             name="offices/form.html",
             context={
                 "request": request,
-                "title": translate(lang, "offices.form_edit_title", office_id=office_id),
+                "title": translate(lang, "offices.form_edit_title", office_id=office.id),
                 "mode": "edit",
-                "form_action": f"/offices/{office_id}/edit",
+                "form_action": f"/offices/{office_uuid}/edit",
                 "values": values,
                 "errors": errors,
                 "lang": lang,
@@ -84,7 +84,7 @@ async def edit_office_ui(
 
     update_office(
         repository=repository,
-        office_uuid=office_id,
+        office_uuid=office_uuid,
         name=payload.name,
         address=payload.address,
         lat=payload.lat,

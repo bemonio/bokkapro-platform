@@ -92,8 +92,14 @@ docker compose up --build
 
 -   `migrate` runs first (`alembic upgrade head`)
 -   `app` starts only after `migrate` completes successfully
--   API docs: <http://localhost:8000/docs>
+-   API docs (disabled by default): <http://localhost:8000/docs>
 -   Health: <http://localhost:8000/health>
+
+To enable Swagger UI/ReDoc for development, set:
+
+``` bash
+SWAGGER_UI_ENABLED=true
+```
 
 ### Run migrations only
 

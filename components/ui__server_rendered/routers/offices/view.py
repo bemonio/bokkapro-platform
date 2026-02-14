@@ -11,16 +11,16 @@ from components.ui__server_rendered.i18n import translate
 router = APIRouter()
 
 
-@router.get("/{office_id}")
+@router.get("/{office_uuid}")
 def view_office(
-    office_id: int,
+    office_uuid: str,
     request: Request,
     repository: OfficeRepositorySqlModel = Depends(get_office_repository),
     lang: str = Depends(get_locale),
     templates: Jinja2Templates = Depends(get_templates),
 ):
     try:
-        office = get_office(repository=repository, office_uuid=office_id)
+        office = get_office(repository=repository, office_uuid=office_uuid)
     except OfficeNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
