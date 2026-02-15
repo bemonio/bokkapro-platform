@@ -1,13 +1,105 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="max-w-3xl">
+<div class="max-w-3xl" x-data="routeTaskForm({ initialRouteUuid: '{{ values.route_uuid|default('') }}', initialTaskUuid: '{{ values.task_uuid|default('') }}' })">
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
   {% if entity_uuid %}<p class="-mt-4 mb-6 break-all text-[10px] text-slate-400">{{ entity_uuid }}</p>{% endif %}
   <form method="post" action="{{ url_with_lang(form_action, lang=lang) if mode != 'view' else '#' }}" class="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
     <div class="grid sm:grid-cols-2 gap-4">
-      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.route_uuid") }}</label><input name="route_uuid" value="{{ values.route_uuid }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
-      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.task_uuid") }}</label><input name="task_uuid" value="{{ values.task_uuid }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div class="relative">
+        <label class="block text-sm font-medium mb-1" for="route-search-input">{{ t(lang, "route_tasks.route_uuid") }}</label>
+        <input type="hidden" name="route_uuid" :value="selectedRouteUuid" />
+        <button
+          id="route-search-input"
+          type="button"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
+          :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
+          @click="toggleRouteDropdown()"
+          @keydown.down.prevent="openRouteDropdown()"
+          @keydown.enter.prevent="toggleRouteDropdown()"
+          @keydown.esc.prevent="closeRouteDropdown()"
+          :aria-expanded="routeOpen"
+          aria-haspopup="listbox"
+          {% if mode == 'view' %}disabled{% endif %}
+        >
+          <span class="truncate" x-text="selectedRouteLabel || routeTexts.placeholder"></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div x-show="routeOpen" @click.outside="closeRouteDropdown()" class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg" x-cloak>
+          <div class="p-2 border-b border-slate-200">
+            <input
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2"
+              :placeholder="routeTexts.searchPlaceholder"
+              x-model="routeSearch"
+              @input="onRouteSearchInput()"
+              @keydown.esc.prevent="closeRouteDropdown()"
+            />
+          </div>
+          <div class="max-h-60 overflow-auto" @scroll="onRouteDropdownScroll($event)" role="listbox" aria-label="Route options">
+            <template x-for="route in routeItems" :key="route.uuid">
+              <button
+                type="button"
+                class="w-full text-left px-3 py-2 hover:bg-slate-100"
+                @click="selectRoute(route)"
+                :class="{ 'bg-slate-100': String(selectedRouteUuid) === String(route.uuid) }"
+              >
+                <span x-text="route.label"></span>
+              </button>
+            </template>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingRoutes" x-text="routeTexts.loading"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="routeError && !isFetchingRoutes" x-text="routeError"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingRoutes && !routeError && routeItems.length === 0" x-text="routeTexts.noResults"></p>
+          </div>
+        </div>
+      </div>
+      <div class="relative">
+        <label class="block text-sm font-medium mb-1" for="task-search-input">{{ t(lang, "route_tasks.task_uuid") }}</label>
+        <input type="hidden" name="task_uuid" :value="selectedTaskUuid" />
+        <button
+          id="task-search-input"
+          type="button"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
+          :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
+          @click="toggleTaskDropdown()"
+          @keydown.down.prevent="openTaskDropdown()"
+          @keydown.enter.prevent="toggleTaskDropdown()"
+          @keydown.esc.prevent="closeTaskDropdown()"
+          :aria-expanded="taskOpen"
+          aria-haspopup="listbox"
+          {% if mode == 'view' %}disabled{% endif %}
+        >
+          <span class="truncate" x-text="selectedTaskLabel || taskTexts.placeholder"></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+        <div x-show="taskOpen" @click.outside="closeTaskDropdown()" class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg" x-cloak>
+          <div class="p-2 border-b border-slate-200">
+            <input
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2"
+              :placeholder="taskTexts.searchPlaceholder"
+              x-model="taskSearch"
+              @input="onTaskSearchInput()"
+              @keydown.esc.prevent="closeTaskDropdown()"
+            />
+          </div>
+          <div class="max-h-60 overflow-auto" @scroll="onTaskDropdownScroll($event)" role="listbox" aria-label="Task options">
+            <template x-for="task in taskItems" :key="task.uuid">
+              <button
+                type="button"
+                class="w-full text-left px-3 py-2 hover:bg-slate-100"
+                @click="selectTask(task)"
+                :class="{ 'bg-slate-100': String(selectedTaskUuid) === String(task.uuid) }"
+              >
+                <span x-text="task.label"></span>
+              </button>
+            </template>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingTasks" x-text="taskTexts.loading"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="taskError && !isFetchingTasks" x-text="taskError"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingTasks && !taskError && taskItems.length === 0" x-text="taskTexts.noResults"></p>
+          </div>
+        </div>
+      </div>
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.sequence_order") }}</label><input type="number" min="1" name="sequence_order" value="{{ values.sequence_order }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for s in ['pending','arrived','completed','skipped','failed'] %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ t(lang, "route_tasks.status_" ~ s) }}</option>{% endfor %}</select></div>
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.planned_arrival_at") }}</label><input type="datetime-local" name="planned_arrival_at" value="{{ values.planned_arrival_at|replace(' ','T') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
@@ -19,4 +111,217 @@
     <div class="flex gap-3 pt-2"><a href="{{ url_with_lang('/route-tasks', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>{% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>{% endif %}</div>
   </form>
 </div>
+
+<script>
+  function routeTaskForm({ initialRouteUuid, initialTaskUuid }) {
+    return {
+      routeOpen: false,
+      routeSearch: "",
+      routeItems: [],
+      selectedRouteUuid: initialRouteUuid || "",
+      selectedRouteLabel: initialRouteUuid || "",
+      routePage: 1,
+      routeHasNext: true,
+      routeDebounceTimer: null,
+      isFetchingRoutes: false,
+      routeError: "",
+      taskOpen: false,
+      taskSearch: "",
+      taskItems: [],
+      selectedTaskUuid: initialTaskUuid || "",
+      selectedTaskLabel: initialTaskUuid || "",
+      taskPage: 1,
+      taskHasNext: true,
+      taskDebounceTimer: null,
+      isFetchingTasks: false,
+      taskError: "",
+      routeTexts: {
+        placeholder: "{{ t(lang, 'route_tasks.select_route') }}",
+        searchPlaceholder: "{{ t(lang, 'route_tasks.search_route_placeholder') }}",
+        loading: "{{ t(lang, 'common.loading') }}",
+        noResults: "{{ t(lang, 'common.no_results') }}",
+        fetchError: "{{ t(lang, 'route_tasks.route_load_error') }}",
+      },
+      taskTexts: {
+        placeholder: "{{ t(lang, 'route_tasks.select_task') }}",
+        searchPlaceholder: "{{ t(lang, 'route_tasks.search_task_placeholder') }}",
+        loading: "{{ t(lang, 'common.loading') }}",
+        noResults: "{{ t(lang, 'common.no_results') }}",
+        fetchError: "{{ t(lang, 'route_tasks.task_load_error') }}",
+      },
+      formatRouteLabel(route) {
+        return `${route.service_date || '-'} · ${route.vehicle_name || route.uuid}`;
+      },
+      formatTaskLabel(task) {
+        return `${task.reference || task.type} · ${task.uuid}`;
+      },
+      toggleRouteDropdown() {
+        if (this.routeOpen) {
+          this.closeRouteDropdown();
+          return;
+        }
+        this.openRouteDropdown();
+      },
+      openRouteDropdown() {
+        this.routeOpen = true;
+        if (this.routeItems.length === 0) {
+          this.resetRoutes();
+          this.fetchRoutes();
+        }
+      },
+      closeRouteDropdown() {
+        this.routeOpen = false;
+      },
+      onRouteSearchInput() {
+        clearTimeout(this.routeDebounceTimer);
+        this.routeDebounceTimer = setTimeout(() => {
+          this.resetRoutes();
+          this.fetchRoutes();
+        }, 350);
+      },
+      onRouteDropdownScroll(event) {
+        const target = event.target;
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+        if (nearBottom) {
+          this.fetchRoutes();
+        }
+      },
+      resetRoutes() {
+        this.routePage = 1;
+        this.routeHasNext = true;
+        this.routeItems = [];
+        this.routeError = "";
+      },
+      async fetchRoutes() {
+        if (this.isFetchingRoutes || !this.routeHasNext) {
+          return;
+        }
+        this.isFetchingRoutes = true;
+        this.routeError = "";
+        const query = new URLSearchParams({ page: String(this.routePage), page_size: "20", search: this.routeSearch, sort: "service_date", order: "desc" });
+        try {
+          const response = await fetch(`/api/routes?${query.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Request failed with ${response.status}`);
+          }
+          const payload = await response.json();
+          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+          const mappedItems = incomingItems.map((route) => ({ ...route, label: this.formatRouteLabel(route) }));
+          const byUuid = new Map(this.routeItems.map((item) => [item.uuid, item]));
+          mappedItems.forEach((item) => {
+            if (!byUuid.has(item.uuid)) {
+              byUuid.set(item.uuid, item);
+            }
+            if (String(item.uuid) === String(this.selectedRouteUuid)) {
+              this.selectedRouteLabel = item.label;
+            }
+          });
+          if (this.selectedRouteUuid && !Array.from(byUuid.keys()).includes(this.selectedRouteUuid)) {
+            byUuid.set(this.selectedRouteUuid, { uuid: this.selectedRouteUuid, label: this.selectedRouteUuid });
+          }
+          this.routeItems = Array.from(byUuid.values());
+          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
+          this.routeHasNext = Boolean(meta && meta.hasNext);
+          if (incomingItems.length > 0) {
+            this.routePage += 1;
+          } else {
+            this.routeHasNext = false;
+          }
+        } catch (_error) {
+          this.routeError = this.routeTexts.fetchError;
+        } finally {
+          this.isFetchingRoutes = false;
+        }
+      },
+      selectRoute(route) {
+        this.selectedRouteUuid = route.uuid;
+        this.selectedRouteLabel = route.label;
+        this.closeRouteDropdown();
+      },
+      toggleTaskDropdown() {
+        if (this.taskOpen) {
+          this.closeTaskDropdown();
+          return;
+        }
+        this.openTaskDropdown();
+      },
+      openTaskDropdown() {
+        this.taskOpen = true;
+        if (this.taskItems.length === 0) {
+          this.resetTasks();
+          this.fetchTasks();
+        }
+      },
+      closeTaskDropdown() {
+        this.taskOpen = false;
+      },
+      onTaskSearchInput() {
+        clearTimeout(this.taskDebounceTimer);
+        this.taskDebounceTimer = setTimeout(() => {
+          this.resetTasks();
+          this.fetchTasks();
+        }, 350);
+      },
+      onTaskDropdownScroll(event) {
+        const target = event.target;
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+        if (nearBottom) {
+          this.fetchTasks();
+        }
+      },
+      resetTasks() {
+        this.taskPage = 1;
+        this.taskHasNext = true;
+        this.taskItems = [];
+        this.taskError = "";
+      },
+      async fetchTasks() {
+        if (this.isFetchingTasks || !this.taskHasNext) {
+          return;
+        }
+        this.isFetchingTasks = true;
+        this.taskError = "";
+        const query = new URLSearchParams({ page: String(this.taskPage), page_size: "20", search: this.taskSearch, sort: "created_at", order: "desc" });
+        try {
+          const response = await fetch(`/api/tasks?${query.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Request failed with ${response.status}`);
+          }
+          const payload = await response.json();
+          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+          const mappedItems = incomingItems.map((task) => ({ ...task, label: this.formatTaskLabel(task) }));
+          const byUuid = new Map(this.taskItems.map((item) => [item.uuid, item]));
+          mappedItems.forEach((item) => {
+            if (!byUuid.has(item.uuid)) {
+              byUuid.set(item.uuid, item);
+            }
+            if (String(item.uuid) === String(this.selectedTaskUuid)) {
+              this.selectedTaskLabel = item.label;
+            }
+          });
+          if (this.selectedTaskUuid && !Array.from(byUuid.keys()).includes(this.selectedTaskUuid)) {
+            byUuid.set(this.selectedTaskUuid, { uuid: this.selectedTaskUuid, label: this.selectedTaskUuid });
+          }
+          this.taskItems = Array.from(byUuid.values());
+          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
+          this.taskHasNext = Boolean(meta && meta.hasNext);
+          if (incomingItems.length > 0) {
+            this.taskPage += 1;
+          } else {
+            this.taskHasNext = false;
+          }
+        } catch (_error) {
+          this.taskError = this.taskTexts.fetchError;
+        } finally {
+          this.isFetchingTasks = false;
+        }
+      },
+      selectTask(task) {
+        this.selectedTaskUuid = task.uuid;
+        this.selectedTaskLabel = task.label;
+        this.closeTaskDropdown();
+      },
+    };
+  }
+</script>
 {% endblock %}
