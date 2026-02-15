@@ -41,7 +41,7 @@
       <div class="flex gap-3 pt-2">
         <a href="{{ url_with_lang('/offices', lang=lang) if url_with_lang is defined and lang is defined else '/offices' }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") if t is defined and lang is defined else "Back" }}</a>
         {% if mode != 'view' %}
-        <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") if t is defined and lang is defined else "Save" }}</button>
+        <button type="submit" class="px-4 py-2 bg-[#004669] text-white rounded-md">{{ t(lang, "common.save") if t is defined and lang is defined else "Save" }}</button>
         {% endif %}
       </div>
     </form>

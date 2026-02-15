@@ -3,7 +3,7 @@
 {% block content %}
 <div class="flex items-center justify-between mb-6">
   <h1 class="text-2xl font-bold">{{ t(lang, "routes.title") }}</h1>
-  <a href="{{ url_with_lang('/routes/new', lang=lang) }}" class="bg-slate-900 text-white text-sm px-4 py-2 rounded-md">{{ t(lang, "routes.new_route") }}</a>
+  <a href="{{ url_with_lang('/routes/new', lang=lang) }}" class="bg-[#004669] text-white text-sm px-4 py-2 rounded-md">{{ t(lang, "routes.new_route") }}</a>
 </div>
 <form method="get" action="/routes" class="mb-4" hx-get="/routes" hx-target="#routes-table" hx-push-url="true">
   <input type="hidden" name="lang" value="{{ lang }}" />

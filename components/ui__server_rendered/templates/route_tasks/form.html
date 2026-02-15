@@ -108,7 +108,7 @@
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.actual_departure_at") }}</label><input type="datetime-local" name="actual_departure_at" value="{{ values.actual_departure_at|replace(' ','T') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
     </div>
     {% if errors %}<p class="text-sm text-red-600">{{ errors|tojson }}</p>{% endif %}
-    <div class="flex gap-3 pt-2"><a href="{{ url_with_lang('/route-tasks', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>{% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>{% endif %}</div>
+    <div class="flex gap-3 pt-2"><a href="{{ url_with_lang('/route-tasks', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>{% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-[#004669] text-white rounded-md">{{ t(lang, "common.save") }}</button>{% endif %}</div>
   </form>
 </div>
 
