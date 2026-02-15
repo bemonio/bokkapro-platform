@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold">{{ t(lang, "route_tasks.title") }}</h1>
+  <a href="{{ url_with_lang('/route-tasks/new', lang=lang) }}" class="bg-slate-900 text-white text-sm px-4 py-2 rounded-md">{{ t(lang, "route_tasks.new_route_task") }}</a>
+</div>
+<form method="get" action="/route-tasks" class="mb-4" hx-get="/route-tasks" hx-target="#route-tasks-table" hx-push-url="true">
+  <input type="hidden" name="lang" value="{{ lang }}" />
+  <div class="flex gap-2">
+    <input type="text" name="search" value="{{ search }}" placeholder="{{ t(lang, 'route_tasks.search_placeholder') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" hx-trigger="keyup changed delay:300ms, search" hx-get="/route-tasks" hx-target="#route-tasks-table" hx-include="closest form" hx-push-url="true" />
+    <input type="hidden" name="sort" value="{{ sort }}" />
+    <input type="hidden" name="order" value="{{ order }}" />
+    <select name="page_size" class="rounded-md border border-slate-300 px-3 py-2" onchange="this.form.requestSubmit()">
+      {% for size in [5, 10, 20, 50] %}
+      <option value="{{ size }}" {% if pagination.page_size == size %}selected{% endif %}>{{ t(lang, "route_tasks.page_size", size=size) }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</form>
+<div id="route-tasks-table">{% include "route_tasks/_table.html" %}</div>
+{% endblock %}

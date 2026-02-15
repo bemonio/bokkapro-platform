@@ -4,6 +4,7 @@ from sqlmodel import Session
 from bases.platform.db import get_session
 from components.persistence__sqlmodel.repositories.offices_repo import OfficeRepositorySqlModel
 from components.persistence__sqlmodel.repositories.routes_repo import RouteRepositorySqlModel
+from components.persistence__sqlmodel.repositories.route_tasks_repo import RouteTaskRepositorySqlModel
 from components.persistence__sqlmodel.repositories.tasks_repo import TaskRepositorySqlModel
 from components.persistence__sqlmodel.repositories.vehicles_repo import VehicleRepositorySqlModel
 
@@ -23,3 +24,7 @@ def get_task_repository(session: Session = Depends(get_session)) -> TaskReposito
 
 def get_route_repository(session: Session = Depends(get_session)) -> RouteRepositorySqlModel:
     return RouteRepositorySqlModel(session)
+
+
+def get_route_task_repository(session: Session = Depends(get_session)) -> RouteTaskRepositorySqlModel:
+    return RouteTaskRepositorySqlModel(session)
