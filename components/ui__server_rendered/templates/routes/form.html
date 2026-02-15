@@ -1,24 +1,137 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="max-w-3xl">
+<div
+  class="max-w-3xl"
+  x-data="routeForm({
+    initialOfficeId: '{{ values.office_id }}',
+    initialOfficeName: '{{ values.office_name or '' }}',
+    initialVehicleId: '{{ values.vehicle_id }}',
+    initialVehicleName: '{{ values.vehicle_name or '' }}',
+    lang: '{{ lang }}'
+  })"
+>
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
   <form method="post" action="{{ form_action }}" class="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
     <div class="grid sm:grid-cols-2 gap-4">
-      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.office") }}</label>
-        <select name="office_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
-          <option value="">{{ t(lang, "routes.select_office") }}</option>
-          {% for office in office_options %}
-          <option value="{{ office.id }}" {% if values.office_id == office.id|string %}selected{% endif %}>{{ office.name }}</option>
-          {% endfor %}
-        </select></div>
-      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.vehicle") }}</label>
-        <select name="vehicle_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
-          <option value="">{{ t(lang, "routes.select_vehicle") }}</option>
-          {% for vehicle in vehicle_options %}
-          <option value="{{ vehicle.id }}" {% if values.vehicle_id == vehicle.id|string %}selected{% endif %}>{{ vehicle.name }}</option>
-          {% endfor %}
-        </select></div>
+      <div class="relative">
+        <label class="block text-sm font-medium mb-1" for="route-office-search-input">{{ t(lang, "routes.office") }}</label>
+        <input type="hidden" name="office_id" :value="selectedOfficeId" />
+        <input type="hidden" name="office_name" :value="selectedOfficeName" />
+        <button
+          id="route-office-search-input"
+          type="button"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
+          :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
+          @click="toggleOfficeDropdown()"
+          @keydown.down.prevent="openOfficeDropdown()"
+          @keydown.enter.prevent="toggleOfficeDropdown()"
+          @keydown.esc.prevent="closeOfficeDropdown()"
+          :aria-expanded="officeOpen"
+          aria-haspopup="listbox"
+          {% if mode == 'view' %}disabled{% endif %}
+        >
+          <span class="truncate" x-text="selectedOfficeName || officeTexts.placeholder"></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+
+        <p class="text-xs text-red-600 mt-1" x-show="officeError" x-text="officeError"></p>
+
+        <div
+          x-show="officeOpen"
+          @click.outside="closeOfficeDropdown()"
+          class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg"
+          x-cloak
+        >
+          <div class="p-2 border-b border-slate-200">
+            <input
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2"
+              :placeholder="officeTexts.searchPlaceholder"
+              x-model="officeSearch"
+              @input="onOfficeSearchInput()"
+              @keydown.esc.prevent="closeOfficeDropdown()"
+            />
+          </div>
+
+          <div class="max-h-60 overflow-auto" @scroll="onOfficeDropdownScroll($event)" role="listbox" aria-label="Office options">
+            <template x-for="office in officeItems" :key="office.uuid">
+              <button
+                type="button"
+                class="w-full text-left px-3 py-2 hover:bg-slate-100"
+                @click="selectOffice(office)"
+                :class="{ 'bg-slate-100': String(selectedOfficeId) === String(office.id) }"
+              >
+                <span x-text="office.name"></span>
+              </button>
+            </template>
+
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingOffices" x-text="officeTexts.loading"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="officeError && !isFetchingOffices" x-text="officeError"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingOffices && !officeError && officeItems.length === 0" x-text="officeTexts.noResults"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="relative">
+        <label class="block text-sm font-medium mb-1" for="route-vehicle-search-input">{{ t(lang, "routes.vehicle") }}</label>
+        <input type="hidden" name="vehicle_id" :value="selectedVehicleId" />
+        <input type="hidden" name="vehicle_name" :value="selectedVehicleName" />
+        <button
+          id="route-vehicle-search-input"
+          type="button"
+          class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
+          :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
+          @click="toggleVehicleDropdown()"
+          @keydown.down.prevent="openVehicleDropdown()"
+          @keydown.enter.prevent="toggleVehicleDropdown()"
+          @keydown.esc.prevent="closeVehicleDropdown()"
+          :aria-expanded="vehicleOpen"
+          aria-haspopup="listbox"
+          {% if mode == 'view' %}disabled{% endif %}
+        >
+          <span class="truncate" x-text="selectedVehicleName || vehicleTexts.placeholder"></span>
+          <span aria-hidden="true">▾</span>
+        </button>
+
+        <p class="text-xs text-red-600 mt-1" x-show="vehicleError" x-text="vehicleError"></p>
+
+        <div
+          x-show="vehicleOpen"
+          @click.outside="closeVehicleDropdown()"
+          class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg"
+          x-cloak
+        >
+          <div class="p-2 border-b border-slate-200">
+            <input
+              type="text"
+              class="w-full rounded-md border border-slate-300 px-3 py-2"
+              :placeholder="vehicleTexts.searchPlaceholder"
+              x-model="vehicleSearch"
+              @input="onVehicleSearchInput()"
+              @keydown.esc.prevent="closeVehicleDropdown()"
+            />
+          </div>
+
+          <div class="max-h-60 overflow-auto" @scroll="onVehicleDropdownScroll($event)" role="listbox" aria-label="Vehicle options">
+            <template x-for="vehicle in vehicleItems" :key="vehicle.uuid">
+              <button
+                type="button"
+                class="w-full text-left px-3 py-2 hover:bg-slate-100"
+                @click="selectVehicle(vehicle)"
+                :class="{ 'bg-slate-100': String(selectedVehicleId) === String(vehicle.id) }"
+              >
+                <span x-text="vehicle.name"></span>
+              </button>
+            </template>
+
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingVehicles" x-text="vehicleTexts.loading"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="vehicleError && !isFetchingVehicles" x-text="vehicleError"></p>
+            <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingVehicles && !vehicleError && vehicleItems.length === 0" x-text="vehicleTexts.noResults"></p>
+          </div>
+        </div>
+      </div>
+
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.service_date") }}</label><input type="date" name="service_date" value="{{ values.service_date }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for item in ['draft','planned','in_progress','completed','cancelled','failed'] %}<option value="{{ item }}" {% if values.status == item %}selected{% endif %}>{{ t(lang, "routes.status_" ~ item) }}</option>{% endfor %}</select></div>
       <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.total_tasks") }}</label><input type="number" name="total_tasks" min="0" value="{{ values.total_tasks }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
@@ -30,4 +143,247 @@
     <div class="flex gap-3 pt-2"><a href="{{ url_with_lang('/routes', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>{% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>{% endif %}</div>
   </form>
 </div>
+
+<script>
+  function routeForm({ initialOfficeId, initialOfficeName, initialVehicleId, initialVehicleName, lang }) {
+    return {
+      officeOpen: false,
+      officeSearch: "",
+      officeItems: [],
+      selectedOfficeId: initialOfficeId || "",
+      selectedOfficeName: initialOfficeName || "",
+      officePage: 1,
+      officeHasNext: true,
+      isFetchingOffices: false,
+      officeError: "{{ errors.get('office_id', '') }}",
+      officeDebounceTimer: null,
+      officeTexts: {
+        placeholder: "{{ t(lang, 'routes.select_office') }}",
+        searchPlaceholder: "{{ t(lang, 'routes.search_office_placeholder') }}",
+        loading: "{{ t(lang, 'common.loading') }}",
+        noResults: "{{ t(lang, 'common.no_results') }}",
+        fetchError: "{{ t(lang, 'routes.office_load_error') }}",
+      },
+
+      vehicleOpen: false,
+      vehicleSearch: "",
+      vehicleItems: [],
+      selectedVehicleId: initialVehicleId || "",
+      selectedVehicleName: initialVehicleName || "",
+      vehiclePage: 1,
+      vehicleHasNext: true,
+      isFetchingVehicles: false,
+      vehicleError: "{{ errors.get('vehicle_id', '') }}",
+      vehicleDebounceTimer: null,
+      vehicleTexts: {
+        placeholder: "{{ t(lang, 'routes.select_vehicle') }}",
+        searchPlaceholder: "{{ t(lang, 'routes.search_vehicle_placeholder') }}",
+        loading: "{{ t(lang, 'common.loading') }}",
+        noResults: "{{ t(lang, 'common.no_results') }}",
+        fetchError: "{{ t(lang, 'routes.vehicle_load_error') }}",
+      },
+      toggleOfficeDropdown() {
+        if (this.officeOpen) {
+          this.closeOfficeDropdown();
+          return;
+        }
+        this.openOfficeDropdown();
+      },
+      openOfficeDropdown() {
+        this.officeOpen = true;
+        if (this.officeItems.length === 0) {
+          this.resetOffices();
+          this.fetchOffices();
+        }
+      },
+      closeOfficeDropdown() {
+        this.officeOpen = false;
+      },
+      onOfficeSearchInput() {
+        clearTimeout(this.officeDebounceTimer);
+        this.officeDebounceTimer = setTimeout(() => {
+          this.resetOffices();
+          this.fetchOffices();
+        }, 350);
+      },
+      onOfficeDropdownScroll(event) {
+        const target = event.target;
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+        if (nearBottom) {
+          this.fetchOffices();
+        }
+      },
+      resetOffices() {
+        this.officePage = 1;
+        this.officeHasNext = true;
+        this.officeItems = [];
+        this.officeError = "";
+      },
+      async fetchOffices() {
+        if (this.isFetchingOffices || !this.officeHasNext) {
+          return;
+        }
+
+        this.isFetchingOffices = true;
+        this.officeError = "";
+
+        const query = new URLSearchParams({
+          page: String(this.officePage),
+          page_size: "20",
+          search: this.officeSearch,
+          sort: "name",
+          order: "asc",
+        });
+
+        try {
+          const response = await fetch(`/api/offices?${query.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Request failed with ${response.status}`);
+          }
+
+          const payload = await response.json();
+          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+          const byUuid = new Map(this.officeItems.map((item) => [item.uuid, item]));
+
+          incomingItems.forEach((item) => {
+            if (!byUuid.has(item.uuid)) {
+              byUuid.set(item.uuid, item);
+            }
+          });
+
+          if (this.selectedOfficeId && this.selectedOfficeName) {
+            const hasSelected = Array.from(byUuid.values()).some((item) => String(item.id) === String(this.selectedOfficeId));
+            if (!hasSelected) {
+              byUuid.set(`selected-${this.selectedOfficeId}`, {
+                uuid: `selected-${this.selectedOfficeId}`,
+                id: Number(this.selectedOfficeId),
+                name: this.selectedOfficeName,
+              });
+            }
+          }
+
+          this.officeItems = Array.from(byUuid.values());
+
+          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
+          this.officeHasNext = Boolean(meta && meta.hasNext);
+          if (incomingItems.length > 0) {
+            this.officePage += 1;
+          } else {
+            this.officeHasNext = false;
+          }
+        } catch (_error) {
+          this.officeError = this.officeTexts.fetchError;
+        } finally {
+          this.isFetchingOffices = false;
+        }
+      },
+      selectOffice(office) {
+        this.selectedOfficeId = office.id;
+        this.selectedOfficeName = office.name;
+        this.closeOfficeDropdown();
+      },
+
+      toggleVehicleDropdown() {
+        if (this.vehicleOpen) {
+          this.closeVehicleDropdown();
+          return;
+        }
+        this.openVehicleDropdown();
+      },
+      openVehicleDropdown() {
+        this.vehicleOpen = true;
+        if (this.vehicleItems.length === 0) {
+          this.resetVehicles();
+          this.fetchVehicles();
+        }
+      },
+      closeVehicleDropdown() {
+        this.vehicleOpen = false;
+      },
+      onVehicleSearchInput() {
+        clearTimeout(this.vehicleDebounceTimer);
+        this.vehicleDebounceTimer = setTimeout(() => {
+          this.resetVehicles();
+          this.fetchVehicles();
+        }, 350);
+      },
+      onVehicleDropdownScroll(event) {
+        const target = event.target;
+        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+        if (nearBottom) {
+          this.fetchVehicles();
+        }
+      },
+      resetVehicles() {
+        this.vehiclePage = 1;
+        this.vehicleHasNext = true;
+        this.vehicleItems = [];
+        this.vehicleError = "";
+      },
+      async fetchVehicles() {
+        if (this.isFetchingVehicles || !this.vehicleHasNext) {
+          return;
+        }
+
+        this.isFetchingVehicles = true;
+        this.vehicleError = "";
+
+        const query = new URLSearchParams({
+          page: String(this.vehiclePage),
+          page_size: "20",
+          search: this.vehicleSearch,
+          sort: "name",
+          order: "asc",
+        });
+
+        try {
+          const response = await fetch(`/api/vehicles?${query.toString()}`);
+          if (!response.ok) {
+            throw new Error(`Request failed with ${response.status}`);
+          }
+
+          const payload = await response.json();
+          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+          const byUuid = new Map(this.vehicleItems.map((item) => [item.uuid, item]));
+
+          incomingItems.forEach((item) => {
+            if (!byUuid.has(item.uuid)) {
+              byUuid.set(item.uuid, item);
+            }
+          });
+
+          if (this.selectedVehicleId && this.selectedVehicleName) {
+            const hasSelected = Array.from(byUuid.values()).some((item) => String(item.id) === String(this.selectedVehicleId));
+            if (!hasSelected) {
+              byUuid.set(`selected-${this.selectedVehicleId}`, {
+                uuid: `selected-${this.selectedVehicleId}`,
+                id: Number(this.selectedVehicleId),
+                name: this.selectedVehicleName,
+              });
+            }
+          }
+
+          this.vehicleItems = Array.from(byUuid.values());
+
+          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
+          this.vehicleHasNext = Boolean(meta && meta.hasNext);
+          if (incomingItems.length > 0) {
+            this.vehiclePage += 1;
+          } else {
+            this.vehicleHasNext = false;
+          }
+        } catch (_error) {
+          this.vehicleError = this.vehicleTexts.fetchError;
+        } finally {
+          this.isFetchingVehicles = false;
+        }
+      },
+      selectVehicle(vehicle) {
+        this.selectedVehicleId = vehicle.id;
+        this.selectedVehicleName = vehicle.name;
+        this.closeVehicleDropdown();
+      },
+    };
+  }
+</script>
 {% endblock %}
