@@ -12,14 +12,56 @@
       <label class="block text-xs uppercase tracking-wide text-slate-500 mb-1">{{ t(lang, "planning.service_date") }}</label>
       <input type="date" x-model="serviceDate" class="w-full rounded-md border border-slate-300 px-3 py-2" />
     </div>
-    <div class="md:col-span-2">
+    <div class="md:col-span-2 relative">
       <label class="block text-xs uppercase tracking-wide text-slate-500 mb-1">{{ t(lang, "planning.office") }}</label>
-      <select x-model="officeUuid" class="w-full rounded-md border border-slate-300 px-3 py-2">
-        <option value="">{{ t(lang, "planning.select_office") }}</option>
-        {% for office in offices %}
-        <option value="{{ office.uuid }}">{{ office.name }}</option>
-        {% endfor %}
-      </select>
+      <button
+        type="button"
+        class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3 bg-white"
+        @click="toggleOfficeDropdown()"
+        @keydown.down.prevent="openOfficeDropdown()"
+        @keydown.enter.prevent="toggleOfficeDropdown()"
+        @keydown.esc.prevent="closeOfficeDropdown()"
+        :aria-expanded="officeOpen"
+        aria-haspopup="listbox"
+      >
+        <span class="truncate" x-text="selectedOfficeName || officeTexts.placeholder"></span>
+        <span aria-hidden="true">▾</span>
+      </button>
+
+      <div
+        x-show="officeOpen"
+        @click.outside="closeOfficeDropdown()"
+        class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg"
+        x-cloak
+      >
+        <div class="p-2 border-b border-slate-200">
+          <input
+            type="text"
+            class="w-full rounded-md border border-slate-300 px-3 py-2"
+            :placeholder="officeTexts.searchPlaceholder"
+            x-model="officeSearch"
+            @input="onOfficeSearchInput()"
+            @keydown.esc.prevent="closeOfficeDropdown()"
+          />
+        </div>
+
+        <div class="max-h-60 overflow-auto" @scroll="onOfficeDropdownScroll($event)" role="listbox" aria-label="Office options">
+          <template x-for="office in officeItems" :key="office.uuid">
+            <button
+              type="button"
+              class="w-full text-left px-3 py-2 hover:bg-slate-100"
+              @click="selectOffice(office)"
+              :class="{ 'bg-slate-100': String(officeUuid) === String(office.uuid) }"
+            >
+              <span x-text="office.name"></span>
+            </button>
+          </template>
+
+          <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingOffices" x-text="officeTexts.loading"></p>
+          <p class="px-3 py-2 text-sm text-red-600" x-show="officeError && !isFetchingOffices" x-text="officeError"></p>
+          <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingOffices && !officeError && officeItems.length === 0" x-text="officeTexts.noResults"></p>
+        </div>
+      </div>
     </div>
     <button @click="generateRoutes" :disabled="busy || !officeUuid" class="bg-slate-900 text-white rounded-md px-4 py-2 text-sm disabled:opacity-50">{{ t(lang, "planning.generate") }}</button>
   </div>
@@ -54,11 +96,126 @@ function planningPage() {
   return {
     serviceDate: '{{ today }}',
     officeUuid: '',
+    selectedOfficeName: '',
+    officeOpen: false,
+    officeSearch: '',
+    officeItems: [],
+    officePage: 1,
+    officeHasNext: true,
+    isFetchingOffices: false,
+    officeError: '',
+    officeDebounceTimer: null,
+    officeTexts: {
+      placeholder: '{{ t(lang, "planning.select_office") }}',
+      searchPlaceholder: '{{ t(lang, "vehicles.search_office_placeholder") }}',
+      loading: '{{ t(lang, "common.loading") }}',
+      noResults: '{{ t(lang, "common.no_results") }}',
+      fetchError: '{{ t(lang, "tasks.office_load_error") }}',
+    },
     routes: [],
     busy: false,
     message: '',
     error: false,
-    init() {},
+    init() {
+      this.fetchOffices();
+    },
+    toggleOfficeDropdown() {
+      if (this.officeOpen) {
+        this.closeOfficeDropdown();
+        return;
+      }
+      this.openOfficeDropdown();
+    },
+    openOfficeDropdown() {
+      this.officeOpen = true;
+      if (this.officeItems.length === 0) {
+        this.resetOffices();
+        this.fetchOffices();
+      }
+    },
+    closeOfficeDropdown() {
+      this.officeOpen = false;
+    },
+    onOfficeSearchInput() {
+      clearTimeout(this.officeDebounceTimer);
+      this.officeDebounceTimer = setTimeout(() => {
+        this.resetOffices();
+        this.fetchOffices();
+      }, 350);
+    },
+    onOfficeDropdownScroll(event) {
+      const target = event.target;
+      const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
+      if (nearBottom) {
+        this.fetchOffices();
+      }
+    },
+    resetOffices() {
+      this.officePage = 1;
+      this.officeHasNext = true;
+      this.officeItems = [];
+      this.officeError = '';
+    },
+    async fetchOffices() {
+      if (this.isFetchingOffices || !this.officeHasNext) {
+        return;
+      }
+
+      this.isFetchingOffices = true;
+      this.officeError = '';
+
+      const query = new URLSearchParams({
+        page: String(this.officePage),
+        page_size: '20',
+        search: this.officeSearch,
+        sort: 'name',
+        order: 'asc',
+      });
+
+      try {
+        const response = await fetch(`/api/offices?${query.toString()}`);
+        if (!response.ok) {
+          throw new Error(`Request failed with ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const incomingItems = Array.isArray(payload.data) ? payload.data : [];
+        const byUuid = new Map(this.officeItems.map((item) => [item.uuid, item]));
+
+        incomingItems.forEach((item) => {
+          if (!byUuid.has(item.uuid)) {
+            byUuid.set(item.uuid, item);
+          }
+        });
+
+        this.officeItems = Array.from(byUuid.values());
+
+        if (!this.officeUuid && this.officeItems.length > 0 && !this.officeSearch) {
+          this.selectOffice(this.officeItems[0], false);
+        }
+
+        const pagination = payload.meta?.pagination;
+        if (pagination) {
+          this.officeHasNext = Boolean(pagination.has_next);
+          this.officePage = Number(pagination.page || this.officePage) + 1;
+        } else {
+          this.officeHasNext = incomingItems.length > 0;
+          this.officePage += 1;
+        }
+      } catch (error) {
+        this.officeError = error?.message || this.officeTexts.fetchError;
+        this.officeHasNext = false;
+      } finally {
+        this.isFetchingOffices = false;
+      }
+    },
+    selectOffice(office, close = true) {
+      this.officeUuid = office.uuid;
+      this.selectedOfficeName = office.name;
+      if (close) {
+        this.closeOfficeDropdown();
+      }
+    },
     async fetchRoutes() {
       if (!this.officeUuid) return;
       this.busy = true;
