@@ -56,3 +56,16 @@ def test_route_tasks_ui_list_and_i18n() -> None:
     assert "Pendiente" in res.text
 
     app.dependency_overrides.clear()
+
+
+def test_route_task_new_form_uses_async_route_and_task_dropdowns() -> None:
+    client, _ = _build_client()
+
+    res = client.get("/route-tasks/new")
+    assert res.status_code == 200
+    assert 'name="route_uuid"' in res.text
+    assert 'name="task_uuid"' in res.text
+    assert '/api/routes?' in res.text
+    assert '/api/tasks?' in res.text
+
+    app.dependency_overrides.clear()
