@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="max-w-3xl">
+  <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
+  {% if entity_uuid %}<p class="-mt-4 mb-6 break-all text-[10px] text-slate-400">{{ entity_uuid }}</p>{% endif %}
+  <form method="post" action="{{ url_with_lang(form_action, lang=lang) if mode != 'view' else '#' }}" class="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.route_uuid") }}</label><input name="route_uuid" value="{{ values.route_uuid }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.task_uuid") }}</label><input name="task_uuid" value="{{ values.task_uuid }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.sequence_order") }}</label><input type="number" min="1" name="sequence_order" value="{{ values.sequence_order }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for s in ['pending','arrived','completed','skipped','failed'] %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ t(lang, "route_tasks.status_" ~ s) }}</option>{% endfor %}</select></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.planned_arrival_at") }}</label><input type="datetime-local" name="planned_arrival_at" value="{{ values.planned_arrival_at|replace(' ','T') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.planned_departure_at") }}</label><input type="datetime-local" name="planned_departure_at" value="{{ values.planned_departure_at|replace(' ','T') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.actual_arrival_at") }}</label><input type="datetime-local" name="actual_arrival_at" value="{{ values.actual_arrival_at|replace(' ','T') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "route_tasks.actual_departure_at") }}</label><input type="datetime-local" name="actual_departure_at" value="{{ values.actual_departure_at|replace(' ','T') }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+    </div>
+    {% if errors %}<p class="text-sm text-red-600">{{ errors|tojson }}</p>{% endif %}
+    <div class="flex gap-3 pt-2"><a href="{{ url_with_lang('/route-tasks', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>{% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>{% endif %}</div>
+  </form>
+</div>
+{% endblock %}
