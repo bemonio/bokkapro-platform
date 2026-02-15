@@ -1,12 +1,38 @@
+{% set next_service_date_order = "desc" if sort == "service_date" and order == "asc" else "asc" %}
+{% set next_status_order = "desc" if sort == "status" and order == "asc" else "asc" %}
+{% set next_office_order = "desc" if sort == "office_id" and order == "asc" else "asc" %}
+{% set next_vehicle_order = "desc" if sort == "vehicle_id" and order == "asc" else "asc" %}
+{% set next_total_tasks_order = "desc" if sort == "total_tasks" and order == "asc" else "asc" %}
+
 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50 text-left text-slate-600"><tr>
-        <th class="px-4 py-3">{{ t(lang, "routes.service_date") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "routes.status") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "routes.office") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "routes.vehicle") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "routes.total_tasks") }}</th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/routes?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=service_date&order={{ next_service_date_order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">
+            {{ t(lang, "routes.service_date") }}{% if sort == "service_date" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/routes?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=status&order={{ next_status_order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">
+            {{ t(lang, "routes.status") }}{% if sort == "status" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/routes?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=office_id&order={{ next_office_order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">
+            {{ t(lang, "routes.office") }}{% if sort == "office_id" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/routes?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=vehicle_id&order={{ next_vehicle_order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">
+            {{ t(lang, "routes.vehicle") }}{% if sort == "vehicle_id" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/routes?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=total_tasks&order={{ next_total_tasks_order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">
+            {{ t(lang, "routes.total_tasks") }}{% if sort == "total_tasks" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
         <th class="px-4 py-3 text-right">{{ t(lang, "common.actions") }}</th>
       </tr></thead>
       <tbody>

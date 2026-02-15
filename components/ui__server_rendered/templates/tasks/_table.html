@@ -1,12 +1,38 @@
+{% set next_reference_order = "desc" if sort == "reference" and order == "asc" else "asc" %}
+{% set next_type_order = "desc" if sort == "type" and order == "asc" else "asc" %}
+{% set next_status_order = "desc" if sort == "status" and order == "asc" else "asc" %}
+{% set next_office_order = "desc" if sort == "office_id" and order == "asc" else "asc" %}
+{% set next_priority_order = "desc" if sort == "priority" and order == "asc" else "asc" %}
+
 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50 text-left text-slate-600"><tr>
-        <th class="px-4 py-3">{{ t(lang, "tasks.reference") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "tasks.type") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "tasks.status") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "tasks.office") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "tasks.priority") }}</th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=reference&order={{ next_reference_order }}&lang={{ lang }}" hx-target="#tasks-table" hx-push-url="true">
+            {{ t(lang, "tasks.reference") }}{% if sort == "reference" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=type&order={{ next_type_order }}&lang={{ lang }}" hx-target="#tasks-table" hx-push-url="true">
+            {{ t(lang, "tasks.type") }}{% if sort == "type" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=status&order={{ next_status_order }}&lang={{ lang }}" hx-target="#tasks-table" hx-push-url="true">
+            {{ t(lang, "tasks.status") }}{% if sort == "status" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=office_id&order={{ next_office_order }}&lang={{ lang }}" hx-target="#tasks-table" hx-push-url="true">
+            {{ t(lang, "tasks.office") }}{% if sort == "office_id" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=priority&order={{ next_priority_order }}&lang={{ lang }}" hx-target="#tasks-table" hx-push-url="true">
+            {{ t(lang, "tasks.priority") }}{% if sort == "priority" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
         <th class="px-4 py-3 text-right">{{ t(lang, "common.actions") }}</th>
       </tr></thead>
       <tbody>
