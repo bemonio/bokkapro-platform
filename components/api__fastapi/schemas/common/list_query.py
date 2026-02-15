@@ -34,6 +34,20 @@ TaskSortField = Literal[
     "created_at",
     "updated_at",
 ]
+
+RouteSortField = Literal[
+    "id",
+    "office_id",
+    "vehicle_id",
+    "service_date",
+    "status",
+    "total_tasks",
+    "total_distance_m",
+    "total_duration_s",
+    "total_load",
+    "created_at",
+    "updated_at",
+]
 SortOrder = Literal["asc", "desc"]
 
 DEFAULT_OFFICE_SORT: OfficeSortField = "name"
@@ -42,6 +56,8 @@ DEFAULT_VEHICLE_SORT: VehicleSortField = "name"
 DEFAULT_VEHICLE_ORDER: SortOrder = "asc"
 DEFAULT_TASK_SORT: TaskSortField = "created_at"
 DEFAULT_TASK_ORDER: SortOrder = "desc"
+DEFAULT_ROUTE_SORT: RouteSortField = "service_date"
+DEFAULT_ROUTE_ORDER: SortOrder = "desc"
 
 
 class ListQueryParams(BaseModel):
@@ -80,6 +96,17 @@ def get_task_list_query_params(
     search: Annotated[str | None, Query()] = None,
     sort: Annotated[TaskSortField, Query()] = DEFAULT_TASK_SORT,
     order: Annotated[SortOrder, Query()] = DEFAULT_TASK_ORDER,
+) -> ListQueryParams:
+    normalized_search = " ".join(search.split()) if search is not None else None
+    return ListQueryParams(page=page, page_size=page_size, search=normalized_search or None, sort=sort, order=order)
+
+
+def get_route_list_query_params(
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    search: Annotated[str | None, Query()] = None,
+    sort: Annotated[RouteSortField, Query()] = DEFAULT_ROUTE_SORT,
+    order: Annotated[SortOrder, Query()] = DEFAULT_ROUTE_ORDER,
 ) -> ListQueryParams:
     normalized_search = " ".join(search.split()) if search is not None else None
     return ListQueryParams(page=page, page_size=page_size, search=normalized_search or None, sort=sort, order=order)
