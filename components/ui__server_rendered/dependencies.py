@@ -16,5 +16,6 @@ def get_templates() -> Jinja2Templates:
     templates = Jinja2Templates(directory=str(templates_dir))
     templates.env.globals["t"] = translate
     templates.env.globals["url_with_lang"] = build_url
-    templates.env.globals["google_maps_api_key"] = os.getenv("GOOGLE_MAPS_API_KEY", "")
+    templates.env.globals["nominatim_base_url"] = os.getenv("NOMINATIM_BASE_URL", "https://nominatim.ingeniouskey.com")
+    templates.env.globals["osrm_base_url"] = os.getenv("OSRM_BASE_URL", "https://osrm.ingeniouskey.com")
     return templates

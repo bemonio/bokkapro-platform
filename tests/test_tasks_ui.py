@@ -52,7 +52,7 @@ def test_tasks_ui_list_and_i18n() -> None:
     app.dependency_overrides.clear()
 
 
-def test_task_view_shows_google_maps_preview() -> None:
+def test_task_view_shows_leaflet_map_preview() -> None:
     client, session = _build_client()
 
     office = OfficeModel(name="Centro", address="Calle 1", storage_capacity=10)
@@ -80,7 +80,8 @@ def test_task_view_shows_google_maps_preview() -> None:
     assert 'x-data="taskForm({' in res.text
     assert 'initialLat: "19.43"' in res.text
     assert 'initialLng: "-99.13"' in res.text
-    assert "maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.mapsApiKey)}&libraries=places&callback=${cb}" in res.text
+    assert "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" in res.text
+    assert "nominatimBaseUrl:" in res.text
     assert "x-ref=\"map\"" in res.text
     assert f"/tasks/{task.id}" not in res.text
 

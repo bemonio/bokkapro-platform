@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <div class="w-full" x-data="taskForm({
   initialLat: {{ values.lat|tojson }},
   initialLng: {{ values.lng|tojson }},
@@ -9,7 +11,7 @@
   initialOfficeId: {{ values.office_id|tojson }},
   initialOfficeName: {{ (values.office_name or '')|tojson }},
   mode: {{ mode|tojson }},
-  mapsApiKey: {{ google_maps_api_key|default('', true)|tojson }},
+  nominatimBaseUrl: {{ nominatim_base_url|tojson }},
   geocodeErrorText: {{ t(lang, 'offices.geocode_failed')|tojson }},
   mapsDisabledText: {{ t(lang, 'offices.maps_unavailable')|tojson }},
   lang: {{ lang|tojson }}
@@ -38,7 +40,7 @@
         <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.type") }}</label><select name="type" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}><option value="pickup" {% if values.type == 'pickup' %}selected{% endif %}>{{ t(lang, "tasks.type_pickup") }}</option><option value="delivery" {% if values.type == 'delivery' %}selected{% endif %}>{{ t(lang, "tasks.type_delivery") }}</option></select></div>
       </div>
       <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for s in ['pending','scheduled','in_progress','completed','failed','cancelled'] %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ t(lang, "tasks.status_" ~ s) }}</option>{% endfor %}</select></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.priority") }}</label><select name="priority" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for p in ['low','normal','high'] %}<option value="{{ p }}" {% if values.priority == p %}selected{% endif %}>{{ t(lang, "tasks.priority_" ~ p) }}</option>{% endfor %}</select></div></div>
-      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.address") }}</label><input name="address" x-model="address" x-ref="addressInput" @input="onManualAddressInput" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/><input type="hidden" name="place_id" x-model="placeId"/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.address") }}</label><div class="relative"><input name="address" x-model="address" x-ref="addressInput" @input="onManualAddressInput" class="w-full rounded-md border border-slate-300 px-3 py-2" autocomplete="off" {% if mode == 'view' %}disabled{% endif %}/><div x-show="suggestionsOpen" class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg max-h-56 overflow-auto" x-cloak><template x-for="item in suggestions" :key="item.place_id"><button type="button" class="w-full text-left px-3 py-2 hover:bg-slate-100" @click="selectSuggestion(item)" x-text="item.display_name"></button></template></div></div><input type="hidden" name="place_id" x-model="placeId"/></div>
       <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "offices.latitude") }}</label><input type="number" step="any" name="lat" x-model="lat" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/>{% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}</div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "offices.longitude") }}</label><input type="number" step="any" name="lng" x-model="lng" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/>{% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}</div></div>
       <p class="text-sm text-red-700" x-show="geoError" x-text="geoError"></p>
       <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.time_window_start") }}</label><input type="datetime-local" name="time_window_start" value="{{ values.time_window_start }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.time_window_end") }}</label><input type="datetime-local" name="time_window_end" value="{{ values.time_window_end }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div></div>
@@ -60,45 +62,28 @@
   function taskForm(config) {
     return {
       lat: config.initialLat || "", lng: config.initialLng || "", address: config.initialAddress || "", placeId: config.initialPlaceId || "",
-      mode: config.mode, mapsApiKey: config.mapsApiKey, geocodeErrorText: config.geocodeErrorText, mapsDisabledText: config.mapsDisabledText,
-      map: null, marker: null, geocoder: null, autocomplete: null, geoError: "", mapsWarning: "", hasManualAddressEdit: false,
+      mode: config.mode, nominatimBaseUrl: config.nominatimBaseUrl, geocodeErrorText: config.geocodeErrorText, mapsDisabledText: config.mapsDisabledText,
+      map: null, marker: null, geoError: "", mapsWarning: "", hasManualAddressEdit: false, suggestions: [], suggestionsOpen: false, suggestionTimer: null,
       officeOpen: false, officeSearch: "", officeItems: [], selectedOfficeId: config.initialOfficeId || "", selectedOfficeName: config.initialOfficeName || "", officePage: 1, officeHasNext: true, isFetchingOffices: false, officeError: "{{ errors.get('office_id', '') }}", officeDebounceTimer: null,
       officeTexts: { placeholder: "{{ t(lang, 'tasks.select_office') }}", searchPlaceholder: "{{ t(lang, 'tasks.search_office_placeholder') }}", loading: "{{ t(lang, 'common.loading') }}", noResults: "{{ t(lang, 'common.no_results') }}", fetchError: "{{ t(lang, 'tasks.office_load_error') }}" },
       init() { this.initializeMapFlow(); },
       get isReadOnly() { return this.mode === 'view'; },
-      onManualAddressInput() { this.hasManualAddressEdit = true; },
+      onManualAddressInput() { this.hasManualAddressEdit = true; clearTimeout(this.suggestionTimer); if (!this.address || this.address.trim().length < 3 || this.isReadOnly) { this.suggestions = []; this.suggestionsOpen = false; return; } this.suggestionTimer = setTimeout(() => this.fetchSuggestions(), 300); },
       async initializeMapFlow() {
-        if (!this.mapsApiKey) { this.mapsWarning = this.mapsDisabledText; return; }
-        try {
-          await this.loadGoogleMaps();
-          this.geocoder = new google.maps.Geocoder();
-          this.map = new google.maps.Map(this.$refs.map, { center: { lat: 0, lng: 0 }, zoom: 3, mapTypeControl: false });
-          this.marker = new google.maps.Marker({ map: this.map, draggable: !this.isReadOnly });
-          this.marker.addListener('dragend', async (event) => { await this.onMarkerMoved(event.latLng); });
-          this.autocomplete = new google.maps.places.Autocomplete(this.$refs.addressInput, { fields: ['place_id', 'formatted_address', 'geometry'] });
-          this.autocomplete.addListener('place_changed', () => this.onPlaceSelected());
-          if (this.lat && this.lng) this.setMarkerPosition({ lat: parseFloat(this.lat), lng: parseFloat(this.lng) }, true);
-          else if (this.address) await this.geocodeAddress(this.address, true);
-        } catch (_e) { this.mapsWarning = this.mapsDisabledText; }
+        if (!window.L) { this.mapsWarning = this.mapsDisabledText; return; }
+        this.map = L.map(this.$refs.map).setView([0, 0], 3);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(this.map);
+        this.marker = L.marker([0, 0], { draggable: !this.isReadOnly }).addTo(this.map);
+        this.marker.on('dragend', async () => { const p = this.marker.getLatLng(); await this.onMarkerMoved(p); });
+        if (this.lat && this.lng) this.setMarkerPosition({ lat: parseFloat(this.lat), lng: parseFloat(this.lng) }, true);
+        else if (this.address) await this.geocodeAddress(this.address, true);
       },
-      loadGoogleMaps() {
-        if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
-        if (window.__googleMapsLoaderPromise) return window.__googleMapsLoaderPromise;
-        window.__googleMapsLoaderPromise = new Promise((resolve, reject) => {
-          const cb = `gmapsInit_${Math.random().toString(36).slice(2)}`; window[cb] = () => { resolve(); delete window[cb]; };
-          const script = document.createElement('script'); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.mapsApiKey)}&libraries=places&callback=${cb}`; script.async = true; script.onerror = reject; document.head.appendChild(script);
-        }); return window.__googleMapsLoaderPromise;
-      },
-      setMarkerPosition(position, center = false) { this.lat = String(position.lat); this.lng = String(position.lng); this.marker.setPosition(position); if (center) { this.map.setCenter(position); this.map.setZoom(15); } },
-      onPlaceSelected() {
-        const place = this.autocomplete.getPlace();
-        if (!place || !place.geometry || !place.geometry.location) { this.geoError = this.geocodeErrorText; return; }
-        this.geoError = ''; this.address = place.formatted_address || this.address; this.placeId = place.place_id || ''; this.hasManualAddressEdit = false;
-        this.setMarkerPosition({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }, true);
-      },
-      onMarkerMoved(latLng) { this.lat = String(latLng.lat()); this.lng = String(latLng.lng()); this.placeId = ''; this.reverseGeocode(latLng).then((addr)=>{ if(addr) this.address = addr; }).catch(()=>{ this.geoError = this.geocodeErrorText; }); },
-      reverseGeocode(latLng) { return new Promise((resolve, reject) => { this.geocoder.geocode({ location: { lat: latLng.lat(), lng: latLng.lng() } }, (results, status) => { if (status === 'OK' && results && results[0]) resolve(results[0].formatted_address); else reject(new Error(status)); }); }); },
-      geocodeAddress(address, center=false) { return new Promise((resolve, reject) => { this.geocoder.geocode({ address }, (results, status) => { if (status === 'OK' && results && results[0]) { const loc = results[0].geometry.location; this.placeId = results[0].place_id || this.placeId; this.setMarkerPosition({ lat: loc.lat(), lng: loc.lng() }, center); this.geoError = ''; resolve(true); } else { this.geoError = this.geocodeErrorText; reject(new Error(status)); } }); }); },
+      async fetchSuggestions() { try { const query = new URLSearchParams({ q: this.address.trim(), format: 'json', addressdetails: '1', limit: '5' }); const response = await fetch(`${this.nominatimBaseUrl}/search?${query.toString()}`); if (!response.ok) throw new Error(); const payload = await response.json(); this.suggestions = Array.isArray(payload) ? payload : []; this.suggestionsOpen = this.suggestions.length > 0; } catch (_error) { this.suggestions = []; this.suggestionsOpen = false; } },
+      selectSuggestion(item) { const lat = parseFloat(item.lat); const lng = parseFloat(item.lon); if (Number.isNaN(lat) || Number.isNaN(lng)) return; this.geoError = ''; this.address = item.display_name || this.address; this.placeId = String(item.place_id || ''); this.hasManualAddressEdit = false; this.suggestionsOpen = false; this.setMarkerPosition({ lat, lng }, true); },
+      setMarkerPosition(position, center = false) { this.lat = String(position.lat); this.lng = String(position.lng); this.marker.setLatLng([position.lat, position.lng]); if (center) { this.map.setView([position.lat, position.lng], 15); } },
+      onMarkerMoved(latLng) { this.lat = String(latLng.lat); this.lng = String(latLng.lng); this.placeId = ''; this.reverseGeocode(latLng).then((addr)=>{ if(addr) this.address = addr; }).catch(()=>{ this.geoError = this.geocodeErrorText; }); },
+      async reverseGeocode(latLng) { const query = new URLSearchParams({ lat: String(latLng.lat), lon: String(latLng.lng), format: 'json' }); const response = await fetch(`${this.nominatimBaseUrl}/reverse?${query.toString()}`); if (!response.ok) throw new Error('reverse_geocode_failed'); const payload = await response.json(); return payload.display_name || ''; },
+      async geocodeAddress(address, center=false) { const query = new URLSearchParams({ q: address, format: 'json', limit: '1' }); const response = await fetch(`${this.nominatimBaseUrl}/search?${query.toString()}`); if (!response.ok) { this.geoError = this.geocodeErrorText; throw new Error('geocode_failed'); } const payload = await response.json(); if (!Array.isArray(payload) || !payload[0]) { this.geoError = this.geocodeErrorText; throw new Error('geocode_empty'); } const item = payload[0]; this.placeId = String(item.place_id || this.placeId); this.setMarkerPosition({ lat: parseFloat(item.lat), lng: parseFloat(item.lon) }, center); this.geoError = ''; return true; },
       validateBeforeSubmit(event) { if (!this.lat || !this.lng) { this.geoError = this.geocodeErrorText; event.preventDefault(); } },
       toggleOfficeDropdown() { if (this.officeOpen) this.closeOfficeDropdown(); else this.openOfficeDropdown(); },
       openOfficeDropdown() { this.officeOpen = true; if (this.officeItems.length === 0) { this.resetOffices(); this.fetchOffices(); } },

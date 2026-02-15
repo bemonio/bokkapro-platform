@@ -94,7 +94,7 @@ TRANSLATIONS = {
             "name_required": "Name is required",
             "storage_required": "Storage capacity is required",
             "geocode_failed": "Unable to geocode the selected location.",
-            "maps_unavailable": "Google Maps is unavailable. Configure GOOGLE_MAPS_API_KEY.",
+            "maps_unavailable": "Map services are unavailable. Verify Leaflet/Nominatim configuration.",
         },
 
         "routes": {
@@ -332,7 +332,7 @@ TRANSLATIONS = {
             "name_required": "El nombre es obligatorio",
             "storage_required": "La capacidad de almacenamiento es obligatoria",
             "geocode_failed": "No se pudo geocodificar la ubicación seleccionada.",
-            "maps_unavailable": "Google Maps no está disponible. Configura GOOGLE_MAPS_API_KEY.",
+            "maps_unavailable": "Los servicios de mapas no están disponibles. Verifica la configuración de Leaflet/Nominatim.",
         },
 
         "routes": {

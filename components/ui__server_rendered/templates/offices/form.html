@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <div
   class="w-full"
   x-data='locationForm({
@@ -9,9 +11,9 @@
     initialLat: {{ values.lat|tojson }},
     initialLng: {{ values.lng|tojson }},
     mode: {{ mode|tojson }},
-    mapsApiKey: {{ google_maps_api_key|default('', true)|tojson }},
+    nominatimBaseUrl: {{ nominatim_base_url|tojson }},
     geocodeErrorText: {{ t(lang, 'offices.geocode_failed')|tojson if t is defined else 'Unable to geocode the selected location.'|tojson }},
-    mapsDisabledText: {{ t(lang, 'offices.maps_unavailable')|tojson if t is defined else 'Google Maps API key is not configured.'|tojson }}
+    mapsDisabledText: {{ t(lang, 'offices.maps_unavailable')|tojson if t is defined else 'Map services are not available.'|tojson }}
   })'
 >
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
@@ -27,7 +29,14 @@
 
       <div>
         <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.address") if t is defined and lang is defined else "Address" }}</label>
-        <input type="text" name="address" x-model="address" x-ref="addressInput" @input="onManualAddressInput" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        <div class="relative">
+          <input type="text" name="address" x-model="address" x-ref="addressInput" @input="onManualAddressInput" class="w-full rounded-md border border-slate-300 px-3 py-2" autocomplete="off" {% if mode == 'view' %}disabled{% endif %} />
+          <div x-show="suggestionsOpen" class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg max-h-56 overflow-auto" x-cloak>
+            <template x-for="item in suggestions" :key="item.place_id">
+              <button type="button" class="w-full text-left px-3 py-2 hover:bg-slate-100" @click="selectSuggestion(item)" x-text="item.display_name"></button>
+            </template>
+          </div>
+        </div>
         <input type="hidden" name="place_id" x-model="placeId" />
         {% if errors.address %}<p class="text-sm text-red-700 mt-1">{{ errors.address }}</p>{% endif %}
       </div>
@@ -76,48 +85,62 @@
       lat: config.initialLat || "",
       lng: config.initialLng || "",
       mode: config.mode,
-      mapsApiKey: config.mapsApiKey,
+      nominatimBaseUrl: config.nominatimBaseUrl,
       geocodeErrorText: config.geocodeErrorText,
       mapsDisabledText: config.mapsDisabledText,
       map: null,
       marker: null,
-      geocoder: null,
-      autocomplete: null,
       geoError: "",
       mapsWarning: "",
       hasManualAddressEdit: false,
+      suggestions: [],
+      suggestionsOpen: false,
+      suggestionTimer: null,
       init() { this.initializeMapFlow(); },
       get isReadOnly() { return this.mode === "view"; },
-      onManualAddressInput() { this.hasManualAddressEdit = true; },
+      onManualAddressInput() {
+        this.hasManualAddressEdit = true;
+        clearTimeout(this.suggestionTimer);
+        if (!this.address || this.address.trim().length < 3 || this.isReadOnly) {
+          this.suggestions = [];
+          this.suggestionsOpen = false;
+          return;
+        }
+        this.suggestionTimer = setTimeout(() => this.fetchSuggestions(), 300);
+      },
       async initializeMapFlow() {
-        if (!this.mapsApiKey) { this.mapsWarning = this.mapsDisabledText; return; }
-        try {
-          await this.loadGoogleMaps();
-          this.geocoder = new google.maps.Geocoder();
-          this.map = new google.maps.Map(this.$refs.map, { center: { lat: 0, lng: 0 }, zoom: 3, mapTypeControl: false });
-          this.marker = new google.maps.Marker({ map: this.map, draggable: !this.isReadOnly });
-          this.marker.addListener("dragend", async (event) => { await this.onMarkerMoved(event.latLng); });
-          this.setupAutocomplete();
-          await this.initializePosition();
-        } catch (_e) { this.mapsWarning = this.mapsDisabledText; }
-      },
-      loadGoogleMaps() {
-        if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
-        if (window.__googleMapsLoaderPromise) return window.__googleMapsLoaderPromise;
-        window.__googleMapsLoaderPromise = new Promise((resolve, reject) => {
-          const cb = `gmapsInit_${Math.random().toString(36).slice(2)}`;
-          window[cb] = () => { resolve(); delete window[cb]; };
-          const script = document.createElement("script");
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.mapsApiKey)}&libraries=places&callback=${cb}`;
-          script.async = true;
-          script.onerror = reject;
-          document.head.appendChild(script);
+        if (!window.L) { this.mapsWarning = this.mapsDisabledText; return; }
+        this.map = L.map(this.$refs.map).setView([0, 0], 3);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(this.map);
+        this.marker = L.marker([0, 0], { draggable: !this.isReadOnly }).addTo(this.map);
+        this.marker.on("dragend", async () => {
+          const p = this.marker.getLatLng();
+          await this.onMarkerMoved(p);
         });
-        return window.__googleMapsLoaderPromise;
+        await this.initializePosition();
       },
-      setupAutocomplete() {
-        this.autocomplete = new google.maps.places.Autocomplete(this.$refs.addressInput, { fields: ["place_id", "formatted_address", "geometry"] });
-        this.autocomplete.addListener("place_changed", () => this.onPlaceSelected());
+      async fetchSuggestions() {
+        try {
+          const query = new URLSearchParams({ q: this.address.trim(), format: "json", addressdetails: "1", limit: "5" });
+          const response = await fetch(`${this.nominatimBaseUrl}/search?${query.toString()}`);
+          if (!response.ok) throw new Error();
+          const payload = await response.json();
+          this.suggestions = Array.isArray(payload) ? payload : [];
+          this.suggestionsOpen = this.suggestions.length > 0;
+        } catch (_error) {
+          this.suggestions = [];
+          this.suggestionsOpen = false;
+        }
+      },
+      selectSuggestion(item) {
+        const lat = parseFloat(item.lat);
+        const lng = parseFloat(item.lon);
+        if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+        this.address = item.display_name || this.address;
+        this.placeId = String(item.place_id || "");
+        this.hasManualAddressEdit = false;
+        this.suggestionsOpen = false;
+        this.setMarkerPosition({ lat, lng }, true);
       },
       async initializePosition() {
         if (this.lat && this.lng) {
@@ -131,28 +154,15 @@
       setMarkerPosition(position, center = false) {
         this.lat = String(position.lat);
         this.lng = String(position.lng);
-        this.marker.setPosition(position);
+        this.marker.setLatLng([position.lat, position.lng]);
         if (center) {
-          this.map.setCenter(position);
-          this.map.setZoom(15);
+          this.map.setView([position.lat, position.lng], 15);
         }
-      },
-      async onPlaceSelected() {
-        const place = this.autocomplete.getPlace();
-        if (!place || !place.geometry || !place.geometry.location) {
-          this.geoError = this.geocodeErrorText;
-          return;
-        }
-        this.geoError = "";
-        this.address = place.formatted_address || this.address;
-        this.placeId = place.place_id || "";
-        this.hasManualAddressEdit = false;
-        this.setMarkerPosition({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }, true);
       },
       async onMarkerMoved(latLng) {
         this.geoError = "";
-        this.lat = String(latLng.lat());
-        this.lng = String(latLng.lng());
+        this.lat = String(latLng.lat);
+        this.lng = String(latLng.lng);
         this.placeId = "";
         try {
           const result = await this.reverseGeocode(latLng);
@@ -161,29 +171,30 @@
           this.geoError = this.geocodeErrorText;
         }
       },
-      reverseGeocode(latLng) {
-        return new Promise((resolve, reject) => {
-          this.geocoder.geocode({ location: { lat: latLng.lat(), lng: latLng.lng() } }, (results, status) => {
-            if (status === "OK" && results && results[0]) resolve(results[0].formatted_address);
-            else reject(new Error(status));
-          });
-        });
+      async reverseGeocode(latLng) {
+        const query = new URLSearchParams({ lat: String(latLng.lat), lon: String(latLng.lng), format: "json" });
+        const response = await fetch(`${this.nominatimBaseUrl}/reverse?${query.toString()}`);
+        if (!response.ok) throw new Error("reverse_geocode_failed");
+        const payload = await response.json();
+        return payload.display_name || "";
       },
       async geocodeAddress(address, center = false) {
-        return new Promise((resolve, reject) => {
-          this.geocoder.geocode({ address }, (results, status) => {
-            if (status === "OK" && results && results[0]) {
-              const loc = results[0].geometry.location;
-              this.placeId = results[0].place_id || this.placeId;
-              this.setMarkerPosition({ lat: loc.lat(), lng: loc.lng() }, center);
-              this.geoError = "";
-              resolve(true);
-              return;
-            }
-            this.geoError = this.geocodeErrorText;
-            reject(new Error(status));
-          });
-        });
+        const query = new URLSearchParams({ q: address, format: "json", limit: "1" });
+        const response = await fetch(`${this.nominatimBaseUrl}/search?${query.toString()}`);
+        if (!response.ok) {
+          this.geoError = this.geocodeErrorText;
+          throw new Error("geocode_failed");
+        }
+        const payload = await response.json();
+        if (!Array.isArray(payload) || !payload[0]) {
+          this.geoError = this.geocodeErrorText;
+          throw new Error("geocode_empty");
+        }
+        const item = payload[0];
+        this.placeId = String(item.place_id || this.placeId);
+        this.setMarkerPosition({ lat: parseFloat(item.lat), lng: parseFloat(item.lon) }, center);
+        this.geoError = "";
+        return true;
       },
       validateBeforeSubmit(event) {
         if (!this.lat || !this.lng) {
