@@ -54,6 +54,15 @@ def test_route_tasks_ui_list_and_i18n() -> None:
     assert res.status_code == 200
     assert "Tareas de ruta" in res.text
     assert "Pendiente" in res.text
+    assert "sort=route_uuid" in res.text
+    assert "sort=task_uuid" in res.text
+    assert "sort=sequence_order" in res.text
+    assert "sort=status" in res.text
+
+    sorted_res = client.get("/route-tasks?sort=status&order=desc", headers={"HX-Request": "true"})
+    assert sorted_res.status_code == 200
+    assert "status&order=asc" in sorted_res.text
+    assert "Status<span aria-hidden=\"true\">↓</span>" in sorted_res.text
 
     app.dependency_overrides.clear()
 

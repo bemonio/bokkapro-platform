@@ -1,11 +1,32 @@
+{% set next_route_uuid_order = "desc" if sort == "route_uuid" and order == "asc" else "asc" %}
+{% set next_task_uuid_order = "desc" if sort == "task_uuid" and order == "asc" else "asc" %}
+{% set next_sequence_order = "desc" if sort == "sequence_order" and order == "asc" else "asc" %}
+{% set next_status_order = "desc" if sort == "status" and order == "asc" else "asc" %}
+
 <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
   <div class="overflow-x-auto">
     <table class="min-w-full text-sm">
       <thead class="bg-slate-50 text-left text-slate-600"><tr>
-        <th class="px-4 py-3">{{ t(lang, "route_tasks.route_uuid") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "route_tasks.task_uuid") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "route_tasks.sequence_order") }}</th>
-        <th class="px-4 py-3">{{ t(lang, "route_tasks.status") }}</th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/route-tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=route_uuid&order={{ next_route_uuid_order }}&lang={{ lang }}" hx-target="#route-tasks-table" hx-push-url="true">
+            {{ t(lang, "route_tasks.route_uuid") }}{% if sort == "route_uuid" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/route-tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=task_uuid&order={{ next_task_uuid_order }}&lang={{ lang }}" hx-target="#route-tasks-table" hx-push-url="true">
+            {{ t(lang, "route_tasks.task_uuid") }}{% if sort == "task_uuid" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/route-tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=sequence_order&order={{ next_sequence_order }}&lang={{ lang }}" hx-target="#route-tasks-table" hx-push-url="true">
+            {{ t(lang, "route_tasks.sequence_order") }}{% if sort == "sequence_order" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
+        <th class="px-4 py-3">
+          <button type="button" class="inline-flex items-center gap-1 font-semibold" hx-get="/route-tasks?page=1&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort=status&order={{ next_status_order }}&lang={{ lang }}" hx-target="#route-tasks-table" hx-push-url="true">
+            {{ t(lang, "route_tasks.status") }}{% if sort == "status" %}<span aria-hidden="true">{{ "↑" if order == "asc" else "↓" }}</span>{% endif %}
+          </button>
+        </th>
         <th class="px-4 py-3 text-right">{{ t(lang, "common.actions") }}</th>
       </tr></thead>
       <tbody>
