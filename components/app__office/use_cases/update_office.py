@@ -10,6 +10,7 @@ def update_office(
     *,
     name: str | None = None,
     address: str | None = None,
+    place_id: str | None = None,
     lat: float | None = None,
     lng: float | None = None,
     storage_capacity: int | None = None,
@@ -22,6 +23,8 @@ def update_office(
         office.name = name
     if address is not None:
         office.address = address
+    if place_id is not None:
+        office.place_id = place_id
     if lat is not None:
         office.lat = lat
     if lng is not None:

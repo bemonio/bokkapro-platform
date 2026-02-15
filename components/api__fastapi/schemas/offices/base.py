@@ -9,6 +9,7 @@ from components.api__fastapi.schemas.common.pagination import PaginatedResponse
 class OfficeCreate(BaseModel):
     name: str = Field(min_length=2)
     address: str | None = None
+    place_id: str | None = None
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     storage_capacity: int = Field(default=0, ge=0)
@@ -17,6 +18,7 @@ class OfficeCreate(BaseModel):
 class OfficeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=2)
     address: str | None = None
+    place_id: str | None = None
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     storage_capacity: int | None = Field(default=None, ge=0)
@@ -30,6 +32,7 @@ class OfficeRead(BaseModel):
     tenant_id: str | None
     name: str
     address: str | None
+    place_id: str | None
     lat: float | None
     lng: float | None
     storage_capacity: int

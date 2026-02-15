@@ -17,6 +17,7 @@ class TaskCreate(BaseModel):
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     address: str | None = None
+    place_id: str | None = None
     time_window_start: datetime | None = None
     time_window_end: datetime | None = None
     service_duration_minutes: int = Field(default=0, ge=0)
@@ -33,6 +34,7 @@ class TaskUpdate(BaseModel):
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     address: str | None = None
+    place_id: str | None = None
     time_window_start: datetime | None = None
     time_window_end: datetime | None = None
     service_duration_minutes: int | None = Field(default=None, ge=0)
@@ -54,6 +56,7 @@ class TaskRead(BaseModel):
     lat: float | None
     lng: float | None
     address: str | None
+    place_id: str | None
     time_window_start: datetime | None
     time_window_end: datetime | None
     service_duration_minutes: int

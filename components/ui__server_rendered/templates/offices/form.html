@@ -1,12 +1,24 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="w-full" x-data="officeMap('{{ values.lat }}', '{{ values.lng }}')">
+<div
+  class="w-full"
+  x-data="locationForm({
+    initialAddress: {{ values.address|tojson }},
+    initialPlaceId: {{ values.place_id|default('', true)|tojson }},
+    initialLat: {{ values.lat|tojson }},
+    initialLng: {{ values.lng|tojson }},
+    mode: {{ mode|tojson }},
+    mapsApiKey: {{ google_maps_api_key|default('', true)|tojson }},
+    geocodeErrorText: {{ t(lang, 'offices.geocode_failed')|tojson if t is defined else 'Unable to geocode the selected location.'|tojson }},
+    mapsDisabledText: {{ t(lang, 'offices.maps_unavailable')|tojson if t is defined else 'Google Maps API key is not configured.'|tojson }}
+  })"
+>
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
   {% if entity_uuid %}<p class="-mt-4 mb-6 break-all text-[10px] text-slate-400">{{ entity_uuid }}</p>{% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-    <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
+    <form method="post" action="{{ url_with_lang(form_action, lang=lang) if url_with_lang is defined and lang is defined else form_action }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4" @submit="validateBeforeSubmit($event)">
       <div>
         <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.name") if t is defined and lang is defined else "Name" }}</label>
         <input type="text" name="name" value="{{ values.name }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
@@ -15,22 +27,25 @@
 
       <div>
         <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.address") if t is defined and lang is defined else "Address" }}</label>
-        <input type="text" name="address" value="{{ values.address }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        <input type="text" name="address" x-model="address" x-ref="addressInput" @input="onManualAddressInput" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
+        <input type="hidden" name="place_id" x-model="placeId" />
         {% if errors.address %}<p class="text-sm text-red-700 mt-1">{{ errors.address }}</p>{% endif %}
       </div>
 
       <div class="grid sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.latitude") if t is defined and lang is defined else "Latitude" }}</label>
-          <input type="number" step="any" name="lat" value="{{ values.lat }}" class="w-full rounded-md border border-slate-300 px-3 py-2" x-model="lat" @input.debounce.300ms="refreshMap()" {% if mode == 'view' %}disabled{% endif %} />
+          <input type="number" step="any" name="lat" x-model="lat" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
           {% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}
         </div>
         <div>
           <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.longitude") if t is defined and lang is defined else "Longitude" }}</label>
-          <input type="number" step="any" name="lng" value="{{ values.lng }}" class="w-full rounded-md border border-slate-300 px-3 py-2" x-model="lng" @input.debounce.300ms="refreshMap()" {% if mode == 'view' %}disabled{% endif %} />
+          <input type="number" step="any" name="lng" x-model="lng" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %} />
           {% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}
         </div>
       </div>
+
+      <p class="text-sm text-red-700" x-show="geoError" x-text="geoError"></p>
 
       <div>
         <label class="block text-sm font-medium mb-1">{{ t(lang, "offices.storage_capacity") if t is defined and lang is defined else "Storage Capacity" }}</label>
@@ -40,44 +55,141 @@
 
       <div class="flex gap-3 pt-2">
         <a href="{{ url_with_lang('/offices', lang=lang) if url_with_lang is defined and lang is defined else '/offices' }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") if t is defined and lang is defined else "Back" }}</a>
-        {% if mode != 'view' %}
-        <button type="submit" class="px-4 py-2 bg-[#004669] text-white rounded-md">{{ t(lang, "common.save") if t is defined and lang is defined else "Save" }}</button>
-        {% endif %}
+        {% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-[#004669] text-white rounded-md">{{ t(lang, "common.save") if t is defined and lang is defined else "Save" }}</button>{% endif %}
       </div>
     </form>
 
     <section class="bg-white border border-slate-200 rounded-lg p-3 lg:sticky lg:top-4">
-      <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") if t is defined and lang is defined else "Ubicación en mapa" }}</h2>
-      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-        <iframe
-          title="Google map preview"
-          class="h-full w-full"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          :src="mapUrl"
-        ></iframe>
-      </div>
-      <p class="text-xs text-slate-500 mt-2">
-        {{ t(lang, "offices.showing_coordinates") if t is defined and lang is defined else "Mostrando coordenadas" }}:
-        <span x-text="lat || '0'"></span>, <span x-text="lng || '0'"></span>
-      </p>
+      <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") if t is defined and lang is defined else "Map location" }}</h2>
+      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50" x-ref="map"></div>
+      <p class="text-xs text-slate-500 mt-2">{{ t(lang, "offices.showing_coordinates") if t is defined and lang is defined else "Showing coordinates" }}: <span x-text="lat || '—'"></span>, <span x-text="lng || '—'"></span></p>
+      <p class="text-xs text-amber-700 mt-2" x-show="mapsWarning" x-text="mapsWarning"></p>
     </section>
   </div>
 </div>
 
 <script>
-  function officeMap(initialLat, initialLng) {
+  function locationForm(config) {
     return {
-      lat: initialLat || "",
-      lng: initialLng || "",
-      mapUrl: "",
-      init() {
-        this.refreshMap();
+      address: config.initialAddress || "",
+      placeId: config.initialPlaceId || "",
+      lat: config.initialLat || "",
+      lng: config.initialLng || "",
+      mode: config.mode,
+      mapsApiKey: config.mapsApiKey,
+      geocodeErrorText: config.geocodeErrorText,
+      mapsDisabledText: config.mapsDisabledText,
+      map: null,
+      marker: null,
+      geocoder: null,
+      autocomplete: null,
+      geoError: "",
+      mapsWarning: "",
+      hasManualAddressEdit: false,
+      init() { this.initializeMapFlow(); },
+      get isReadOnly() { return this.mode === "view"; },
+      onManualAddressInput() { this.hasManualAddressEdit = true; },
+      async initializeMapFlow() {
+        if (!this.mapsApiKey) { this.mapsWarning = this.mapsDisabledText; return; }
+        try {
+          await this.loadGoogleMaps();
+          this.geocoder = new google.maps.Geocoder();
+          this.map = new google.maps.Map(this.$refs.map, { center: { lat: 0, lng: 0 }, zoom: 3, mapTypeControl: false });
+          this.marker = new google.maps.Marker({ map: this.map, draggable: !this.isReadOnly });
+          this.marker.addListener("dragend", async (event) => { await this.onMarkerMoved(event.latLng); });
+          this.setupAutocomplete();
+          await this.initializePosition();
+        } catch (_e) { this.mapsWarning = this.mapsDisabledText; }
       },
-      refreshMap() {
-        const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
-        const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
-        this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&z=15&output=embed`;
+      loadGoogleMaps() {
+        if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
+        if (window.__googleMapsLoaderPromise) return window.__googleMapsLoaderPromise;
+        window.__googleMapsLoaderPromise = new Promise((resolve, reject) => {
+          const cb = `gmapsInit_${Math.random().toString(36).slice(2)}`;
+          window[cb] = () => { resolve(); delete window[cb]; };
+          const script = document.createElement("script");
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.mapsApiKey)}&libraries=places&callback=${cb}`;
+          script.async = true;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        });
+        return window.__googleMapsLoaderPromise;
+      },
+      setupAutocomplete() {
+        this.autocomplete = new google.maps.places.Autocomplete(this.$refs.addressInput, { fields: ["place_id", "formatted_address", "geometry"] });
+        this.autocomplete.addListener("place_changed", () => this.onPlaceSelected());
+      },
+      async initializePosition() {
+        if (this.lat && this.lng) {
+          this.setMarkerPosition({ lat: parseFloat(this.lat), lng: parseFloat(this.lng) }, true);
+          return;
+        }
+        if (this.address) {
+          await this.geocodeAddress(this.address, true);
+        }
+      },
+      setMarkerPosition(position, center = false) {
+        this.lat = String(position.lat);
+        this.lng = String(position.lng);
+        this.marker.setPosition(position);
+        if (center) {
+          this.map.setCenter(position);
+          this.map.setZoom(15);
+        }
+      },
+      async onPlaceSelected() {
+        const place = this.autocomplete.getPlace();
+        if (!place || !place.geometry || !place.geometry.location) {
+          this.geoError = this.geocodeErrorText;
+          return;
+        }
+        this.geoError = "";
+        this.address = place.formatted_address || this.address;
+        this.placeId = place.place_id || "";
+        this.hasManualAddressEdit = false;
+        this.setMarkerPosition({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }, true);
+      },
+      async onMarkerMoved(latLng) {
+        this.geoError = "";
+        this.lat = String(latLng.lat());
+        this.lng = String(latLng.lng());
+        this.placeId = "";
+        try {
+          const result = await this.reverseGeocode(latLng);
+          if (result) this.address = result;
+        } catch (_e) {
+          this.geoError = this.geocodeErrorText;
+        }
+      },
+      reverseGeocode(latLng) {
+        return new Promise((resolve, reject) => {
+          this.geocoder.geocode({ location: { lat: latLng.lat(), lng: latLng.lng() } }, (results, status) => {
+            if (status === "OK" && results && results[0]) resolve(results[0].formatted_address);
+            else reject(new Error(status));
+          });
+        });
+      },
+      async geocodeAddress(address, center = false) {
+        return new Promise((resolve, reject) => {
+          this.geocoder.geocode({ address }, (results, status) => {
+            if (status === "OK" && results && results[0]) {
+              const loc = results[0].geometry.location;
+              this.placeId = results[0].place_id || this.placeId;
+              this.setMarkerPosition({ lat: loc.lat(), lng: loc.lng() }, center);
+              this.geoError = "";
+              resolve(true);
+              return;
+            }
+            this.geoError = this.geocodeErrorText;
+            reject(new Error(status));
+          });
+        });
+      },
+      validateBeforeSubmit(event) {
+        if (!this.lat || !this.lng) {
+          this.geoError = this.geocodeErrorText;
+          event.preventDefault();
+        }
       },
     };
   }

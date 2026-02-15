@@ -1,89 +1,46 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div
-  class="w-full"
-  x-data="taskForm({
-    initialLat: '{{ values.lat }}',
-    initialLng: '{{ values.lng }}',
-    initialOfficeId: '{{ values.office_id }}',
-    initialOfficeName: '{{ values.office_name or '' }}',
-    lang: '{{ lang }}'
-  })"
->
+<div class="w-full" x-data="taskForm({
+  initialLat: {{ values.lat|tojson }},
+  initialLng: {{ values.lng|tojson }},
+  initialAddress: {{ values.address|tojson }},
+  initialPlaceId: {{ values.place_id|default('', true)|tojson }},
+  initialOfficeId: {{ values.office_id|tojson }},
+  initialOfficeName: {{ (values.office_name or '')|tojson }},
+  mode: {{ mode|tojson }},
+  mapsApiKey: {{ google_maps_api_key|default('', true)|tojson }},
+  geocodeErrorText: {{ t(lang, 'offices.geocode_failed')|tojson }},
+  mapsDisabledText: {{ t(lang, 'offices.maps_unavailable')|tojson }},
+  lang: {{ lang|tojson }}
+})">
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
   {% if entity_uuid %}<p class="-mt-4 mb-6 break-all text-[10px] text-slate-400">{{ entity_uuid }}</p>{% endif %}
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-    <form method="post" action="{{ url_with_lang(form_action, lang=lang) if mode != 'view' else '#' }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4">
+    <form method="post" action="{{ url_with_lang(form_action, lang=lang) if mode != 'view' else '#' }}" class="bg-white border border-slate-200 rounded-lg p-6 space-y-4" @submit="validateBeforeSubmit($event)">
       <div class="grid sm:grid-cols-2 gap-4">
         <div class="relative">
           <label class="block text-sm font-medium mb-1" for="office-search-input">{{ t(lang, "tasks.office") }}</label>
           <input type="hidden" name="office_id" :value="selectedOfficeId" />
           <input type="hidden" name="office_name" :value="selectedOfficeName" />
-          <button
-            id="office-search-input"
-            type="button"
-            class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3"
-            :class="{ 'bg-slate-100 cursor-not-allowed': '{{ mode }}' === 'view' }"
-            @click="toggleOfficeDropdown()"
-            @keydown.down.prevent="openOfficeDropdown()"
-            @keydown.enter.prevent="toggleOfficeDropdown()"
-            @keydown.esc.prevent="closeOfficeDropdown()"
-            :aria-expanded="officeOpen"
-            aria-haspopup="listbox"
-            {% if mode == 'view' %}disabled{% endif %}
-          >
-            <span class="truncate" x-text="selectedOfficeName || officeTexts.placeholder"></span>
-            <span aria-hidden="true">▾</span>
+          <button id="office-search-input" type="button" class="w-full rounded-md border border-slate-300 px-3 py-2 text-left flex items-center justify-between gap-3" :class="{ 'bg-slate-100 cursor-not-allowed': mode === 'view' }" @click="toggleOfficeDropdown()" :aria-expanded="officeOpen" aria-haspopup="listbox" {% if mode == 'view' %}disabled{% endif %}>
+            <span class="truncate" x-text="selectedOfficeName || officeTexts.placeholder"></span><span aria-hidden="true">▾</span>
           </button>
-
           <p class="text-xs text-red-600 mt-1" x-show="officeError" x-text="officeError"></p>
-
-          <div
-            x-show="officeOpen"
-            @click.outside="closeOfficeDropdown()"
-            class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg"
-            x-cloak
-          >
-            <div class="p-2 border-b border-slate-200">
-              <input
-                type="text"
-                class="w-full rounded-md border border-slate-300 px-3 py-2"
-                :placeholder="officeTexts.searchPlaceholder"
-                x-model="officeSearch"
-                @input="onOfficeSearchInput()"
-                @keydown.esc.prevent="closeOfficeDropdown()"
-              />
-            </div>
-
-            <div class="max-h-60 overflow-auto" @scroll="onOfficeDropdownScroll($event)" role="listbox" aria-label="Office options">
-              <template x-for="office in officeItems" :key="office.uuid">
-                <button
-                  type="button"
-                  class="w-full text-left px-3 py-2 hover:bg-slate-100"
-                  @click="selectOffice(office)"
-                  :class="{ 'bg-slate-100': String(selectedOfficeId) === String(office.id) }"
-                >
-                  <span x-text="office.name"></span>
-                </button>
-              </template>
-
-              <p class="px-3 py-2 text-sm text-slate-500" x-show="isFetchingOffices" x-text="officeTexts.loading"></p>
-              <p class="px-3 py-2 text-sm text-slate-500" x-show="officeError && !isFetchingOffices" x-text="officeError"></p>
-              <p class="px-3 py-2 text-sm text-slate-500" x-show="!isFetchingOffices && !officeError && officeItems.length === 0" x-text="officeTexts.noResults"></p>
+          <div x-show="officeOpen" @click.outside="closeOfficeDropdown()" class="absolute z-20 mt-1 w-full rounded-md border border-slate-200 bg-white shadow-lg" x-cloak>
+            <div class="p-2 border-b border-slate-200"><input type="text" class="w-full rounded-md border border-slate-300 px-3 py-2" :placeholder="officeTexts.searchPlaceholder" x-model="officeSearch" @input="onOfficeSearchInput()" /></div>
+            <div class="max-h-60 overflow-auto" @scroll="onOfficeDropdownScroll($event)">
+              <template x-for="office in officeItems" :key="office.uuid"><button type="button" class="w-full text-left px-3 py-2 hover:bg-slate-100" @click="selectOffice(office)" :class="{ 'bg-slate-100': String(selectedOfficeId) === String(office.id) }"><span x-text="office.name"></span></button></template>
             </div>
           </div>
         </div>
-
         <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.type") }}</label><select name="type" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}><option value="pickup" {% if values.type == 'pickup' %}selected{% endif %}>{{ t(lang, "tasks.type_pickup") }}</option><option value="delivery" {% if values.type == 'delivery' %}selected{% endif %}>{{ t(lang, "tasks.type_delivery") }}</option></select></div>
       </div>
-      <div class="grid sm:grid-cols-2 gap-4">
-        <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for s in ['pending','scheduled','in_progress','completed','failed','cancelled'] %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ t(lang, "tasks.status_" ~ s) }}</option>{% endfor %}</select></div>
-        <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.priority") }}</label><select name="priority" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for p in ['low','normal','high'] %}<option value="{{ p }}" {% if values.priority == p %}selected{% endif %}>{{ t(lang, "tasks.priority_" ~ p) }}</option>{% endfor %}</select></div>
-      </div>
-      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.address") }}</label><input name="address" value="{{ values.address }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
-      <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "offices.latitude") }}</label><input type="number" step="any" name="lat" value="{{ values.lat }}" x-model="lat" @input.debounce.300ms="refreshMap()" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "offices.longitude") }}</label><input type="number" step="any" name="lng" value="{{ values.lng }}" x-model="lng" @input.debounce.300ms="refreshMap()" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div></div>
+      <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for s in ['pending','scheduled','in_progress','completed','failed','cancelled'] %}<option value="{{ s }}" {% if values.status == s %}selected{% endif %}>{{ t(lang, "tasks.status_" ~ s) }}</option>{% endfor %}</select></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.priority") }}</label><select name="priority" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for p in ['low','normal','high'] %}<option value="{{ p }}" {% if values.priority == p %}selected{% endif %}>{{ t(lang, "tasks.priority_" ~ p) }}</option>{% endfor %}</select></div></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.address") }}</label><input name="address" x-model="address" x-ref="addressInput" @input="onManualAddressInput" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/><input type="hidden" name="place_id" x-model="placeId"/></div>
+      <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "offices.latitude") }}</label><input type="number" step="any" name="lat" x-model="lat" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/>{% if errors.lat %}<p class="text-sm text-red-700 mt-1">{{ errors.lat }}</p>{% endif %}</div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "offices.longitude") }}</label><input type="number" step="any" name="lng" x-model="lng" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/>{% if errors.lng %}<p class="text-sm text-red-700 mt-1">{{ errors.lng }}</p>{% endif %}</div></div>
+      <p class="text-sm text-red-700" x-show="geoError" x-text="geoError"></p>
       <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.time_window_start") }}</label><input type="datetime-local" name="time_window_start" value="{{ values.time_window_start }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.time_window_end") }}</label><input type="datetime-local" name="time_window_end" value="{{ values.time_window_end }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div></div>
       <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.service_duration_minutes") }}</label><input type="number" min="0" name="service_duration_minutes" value="{{ values.service_duration_minutes }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.load_units") }}</label><input type="number" min="0" name="load_units" value="{{ values.load_units }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div></div>
       <div class="grid sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.reference") }}</label><input name="reference" value="{{ values.reference }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div><div><label class="block text-sm font-medium mb-1">{{ t(lang, "tasks.notes") }}</label><input name="notes" value="{{ values.notes }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div></div>
@@ -91,155 +48,66 @@
     </form>
 
     <section class="bg-white border border-slate-200 rounded-lg p-3 lg:sticky lg:top-4">
-      <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") if t is defined and lang is defined else "Ubicación en mapa" }}</h2>
-      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-        <iframe
-          title="Google map preview"
-          class="h-full w-full"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          :src="mapUrl"
-        ></iframe>
-      </div>
-      <p class="text-xs text-slate-500 mt-2">
-        {{ t(lang, "offices.showing_coordinates") if t is defined and lang is defined else "Mostrando coordenadas" }}:
-        <span x-text="lat || '0'"></span>, <span x-text="lng || '0'"></span>
-      </p>
+      <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") }}</h2>
+      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50" x-ref="map"></div>
+      <p class="text-xs text-slate-500 mt-2">{{ t(lang, "offices.showing_coordinates") }}: <span x-text="lat || '—'"></span>, <span x-text="lng || '—'"></span></p>
+      <p class="text-xs text-amber-700 mt-2" x-show="mapsWarning" x-text="mapsWarning"></p>
     </section>
   </div>
 </div>
 
 <script>
-  function taskForm({ initialLat, initialLng, initialOfficeId, initialOfficeName, lang }) {
+  function taskForm(config) {
     return {
-      lat: initialLat || "",
-      lng: initialLng || "",
-      mapUrl: "",
-      officeOpen: false,
-      officeSearch: "",
-      officeItems: [],
-      selectedOfficeId: initialOfficeId || "",
-      selectedOfficeName: initialOfficeName || "",
-      officePage: 1,
-      officeHasNext: true,
-      isFetchingOffices: false,
-      officeError: "{{ errors.get('office_id', '') }}",
-      officeDebounceTimer: null,
-      officeTexts: {
-        placeholder: "{{ t(lang, 'tasks.select_office') }}",
-        searchPlaceholder: "{{ t(lang, 'tasks.search_office_placeholder') }}",
-        loading: "{{ t(lang, 'common.loading') }}",
-        noResults: "{{ t(lang, 'common.no_results') }}",
-        fetchError: "{{ t(lang, 'tasks.office_load_error') }}",
-      },
-      init() {
-        this.refreshMap();
-      },
-      refreshMap() {
-        const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
-        const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
-        this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&z=15&output=embed`;
-      },
-      toggleOfficeDropdown() {
-        if (this.officeOpen) {
-          this.closeOfficeDropdown();
-          return;
-        }
-        this.openOfficeDropdown();
-      },
-      openOfficeDropdown() {
-        this.officeOpen = true;
-        if (this.officeItems.length === 0) {
-          this.resetOffices();
-          this.fetchOffices();
-        }
-      },
-      closeOfficeDropdown() {
-        this.officeOpen = false;
-      },
-      onOfficeSearchInput() {
-        clearTimeout(this.officeDebounceTimer);
-        this.officeDebounceTimer = setTimeout(() => {
-          this.resetOffices();
-          this.fetchOffices();
-        }, 350);
-      },
-      onOfficeDropdownScroll(event) {
-        const target = event.target;
-        const nearBottom = target.scrollTop + target.clientHeight >= target.scrollHeight - 24;
-        if (nearBottom) {
-          this.fetchOffices();
-        }
-      },
-      resetOffices() {
-        this.officePage = 1;
-        this.officeHasNext = true;
-        this.officeItems = [];
-        this.officeError = "";
-      },
-      async fetchOffices() {
-        if (this.isFetchingOffices || !this.officeHasNext) {
-          return;
-        }
-
-        this.isFetchingOffices = true;
-        this.officeError = "";
-
-        const query = new URLSearchParams({
-          page: String(this.officePage),
-          page_size: "20",
-          search: this.officeSearch,
-          sort: "name",
-          order: "asc",
-        });
-
+      lat: config.initialLat || "", lng: config.initialLng || "", address: config.initialAddress || "", placeId: config.initialPlaceId || "",
+      mode: config.mode, mapsApiKey: config.mapsApiKey, geocodeErrorText: config.geocodeErrorText, mapsDisabledText: config.mapsDisabledText,
+      map: null, marker: null, geocoder: null, autocomplete: null, geoError: "", mapsWarning: "", hasManualAddressEdit: false,
+      officeOpen: false, officeSearch: "", officeItems: [], selectedOfficeId: config.initialOfficeId || "", selectedOfficeName: config.initialOfficeName || "", officePage: 1, officeHasNext: true, isFetchingOffices: false, officeError: "{{ errors.get('office_id', '') }}", officeDebounceTimer: null,
+      officeTexts: { placeholder: "{{ t(lang, 'tasks.select_office') }}", searchPlaceholder: "{{ t(lang, 'tasks.search_office_placeholder') }}", loading: "{{ t(lang, 'common.loading') }}", noResults: "{{ t(lang, 'common.no_results') }}", fetchError: "{{ t(lang, 'tasks.office_load_error') }}" },
+      init() { this.initializeMapFlow(); },
+      get isReadOnly() { return this.mode === 'view'; },
+      onManualAddressInput() { this.hasManualAddressEdit = true; },
+      async initializeMapFlow() {
+        if (!this.mapsApiKey) { this.mapsWarning = this.mapsDisabledText; return; }
         try {
-          const response = await fetch(`/api/offices?${query.toString()}`);
-          if (!response.ok) {
-            throw new Error(`Request failed with ${response.status}`);
-          }
-
-          const payload = await response.json();
-          const incomingItems = Array.isArray(payload.data) ? payload.data : [];
-          const byUuid = new Map(this.officeItems.map((item) => [item.uuid, item]));
-
-          incomingItems.forEach((item) => {
-            if (!byUuid.has(item.uuid)) {
-              byUuid.set(item.uuid, item);
-            }
-          });
-
-          if (this.selectedOfficeId && this.selectedOfficeName) {
-            const hasSelected = Array.from(byUuid.values()).some((item) => String(item.id) === String(this.selectedOfficeId));
-            if (!hasSelected) {
-              byUuid.set(`selected-${this.selectedOfficeId}`, {
-                uuid: `selected-${this.selectedOfficeId}`,
-                id: Number(this.selectedOfficeId),
-                name: this.selectedOfficeName,
-              });
-            }
-          }
-
-          this.officeItems = Array.from(byUuid.values());
-
-          const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null;
-          this.officeHasNext = Boolean(meta && meta.hasNext);
-          if (incomingItems.length > 0) {
-            this.officePage += 1;
-          } else {
-            this.officeHasNext = false;
-          }
-        } catch (_error) {
-          this.officeError = this.officeTexts.fetchError;
-        } finally {
-          this.isFetchingOffices = false;
-        }
+          await this.loadGoogleMaps();
+          this.geocoder = new google.maps.Geocoder();
+          this.map = new google.maps.Map(this.$refs.map, { center: { lat: 0, lng: 0 }, zoom: 3, mapTypeControl: false });
+          this.marker = new google.maps.Marker({ map: this.map, draggable: !this.isReadOnly });
+          this.marker.addListener('dragend', async (event) => { await this.onMarkerMoved(event.latLng); });
+          this.autocomplete = new google.maps.places.Autocomplete(this.$refs.addressInput, { fields: ['place_id', 'formatted_address', 'geometry'] });
+          this.autocomplete.addListener('place_changed', () => this.onPlaceSelected());
+          if (this.lat && this.lng) this.setMarkerPosition({ lat: parseFloat(this.lat), lng: parseFloat(this.lng) }, true);
+          else if (this.address) await this.geocodeAddress(this.address, true);
+        } catch (_e) { this.mapsWarning = this.mapsDisabledText; }
       },
-      selectOffice(office) {
-        this.selectedOfficeId = office.id;
-        this.selectedOfficeName = office.name;
-        this.closeOfficeDropdown();
+      loadGoogleMaps() {
+        if (window.google && window.google.maps && window.google.maps.places) return Promise.resolve();
+        if (window.__googleMapsLoaderPromise) return window.__googleMapsLoaderPromise;
+        window.__googleMapsLoaderPromise = new Promise((resolve, reject) => {
+          const cb = `gmapsInit_${Math.random().toString(36).slice(2)}`; window[cb] = () => { resolve(); delete window[cb]; };
+          const script = document.createElement('script'); script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.mapsApiKey)}&libraries=places&callback=${cb}`; script.async = true; script.onerror = reject; document.head.appendChild(script);
+        }); return window.__googleMapsLoaderPromise;
       },
+      setMarkerPosition(position, center = false) { this.lat = String(position.lat); this.lng = String(position.lng); this.marker.setPosition(position); if (center) { this.map.setCenter(position); this.map.setZoom(15); } },
+      onPlaceSelected() {
+        const place = this.autocomplete.getPlace();
+        if (!place || !place.geometry || !place.geometry.location) { this.geoError = this.geocodeErrorText; return; }
+        this.geoError = ''; this.address = place.formatted_address || this.address; this.placeId = place.place_id || ''; this.hasManualAddressEdit = false;
+        this.setMarkerPosition({ lat: place.geometry.location.lat(), lng: place.geometry.location.lng() }, true);
+      },
+      onMarkerMoved(latLng) { this.lat = String(latLng.lat()); this.lng = String(latLng.lng()); this.placeId = ''; this.reverseGeocode(latLng).then((addr)=>{ if(addr) this.address = addr; }).catch(()=>{ this.geoError = this.geocodeErrorText; }); },
+      reverseGeocode(latLng) { return new Promise((resolve, reject) => { this.geocoder.geocode({ location: { lat: latLng.lat(), lng: latLng.lng() } }, (results, status) => { if (status === 'OK' && results && results[0]) resolve(results[0].formatted_address); else reject(new Error(status)); }); }); },
+      geocodeAddress(address, center=false) { return new Promise((resolve, reject) => { this.geocoder.geocode({ address }, (results, status) => { if (status === 'OK' && results && results[0]) { const loc = results[0].geometry.location; this.placeId = results[0].place_id || this.placeId; this.setMarkerPosition({ lat: loc.lat(), lng: loc.lng() }, center); this.geoError = ''; resolve(true); } else { this.geoError = this.geocodeErrorText; reject(new Error(status)); } }); }); },
+      validateBeforeSubmit(event) { if (!this.lat || !this.lng) { this.geoError = this.geocodeErrorText; event.preventDefault(); } },
+      toggleOfficeDropdown() { if (this.officeOpen) this.closeOfficeDropdown(); else this.openOfficeDropdown(); },
+      openOfficeDropdown() { this.officeOpen = true; if (this.officeItems.length === 0) { this.resetOffices(); this.fetchOffices(); } },
+      closeOfficeDropdown() { this.officeOpen = false; },
+      onOfficeSearchInput() { clearTimeout(this.officeDebounceTimer); this.officeDebounceTimer = setTimeout(() => { this.resetOffices(); this.fetchOffices(); }, 350); },
+      onOfficeDropdownScroll(event) { const target = event.target; if (target.scrollTop + target.clientHeight >= target.scrollHeight - 24) this.fetchOffices(); },
+      resetOffices() { this.officePage = 1; this.officeHasNext = true; this.officeItems = []; this.officeError = ''; },
+      async fetchOffices() { if (this.isFetchingOffices || !this.officeHasNext) return; this.isFetchingOffices = true; this.officeError = ''; const query = new URLSearchParams({ page: String(this.officePage), page_size: '20', search: this.officeSearch, sort: 'name', order: 'asc' }); try { const response = await fetch(`/api/offices?${query.toString()}`); if (!response.ok) throw new Error(); const payload = await response.json(); const incomingItems = Array.isArray(payload.data) ? payload.data : []; const byUuid = new Map(this.officeItems.map((item) => [item.uuid, item])); incomingItems.forEach((item) => { if (!byUuid.has(item.uuid)) byUuid.set(item.uuid, item); }); this.officeItems = Array.from(byUuid.values()); const meta = payload.meta && payload.meta.pagination ? payload.meta.pagination : null; this.officeHasNext = Boolean(meta && meta.hasNext); if (incomingItems.length > 0) this.officePage += 1; else this.officeHasNext = false; } catch (_error) { this.officeError = this.officeTexts.fetchError; } finally { this.isFetchingOffices = false; } },
+      selectOffice(office) { this.selectedOfficeId = office.id; this.selectedOfficeName = office.name; this.closeOfficeDropdown(); },
     };
   }
 </script>

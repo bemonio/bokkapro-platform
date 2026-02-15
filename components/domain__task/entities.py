@@ -20,6 +20,7 @@ class Task:
     lat: float | None
     lng: float | None
     address: str | None
+    place_id: str | None
     time_window_start: datetime | None
     time_window_end: datetime | None
     service_duration_minutes: int

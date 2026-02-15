@@ -78,10 +78,10 @@ def test_task_view_shows_google_maps_preview() -> None:
     res = client.get(f"/tasks/{task.uuid}")
     assert res.status_code == 200
     assert 'x-data="taskForm({' in res.text
-    assert "initialLat: '19.43'" in res.text
-    assert "initialLng: '-99.13'" in res.text
-    assert "maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}" in res.text
-    assert "Google map preview" in res.text
+    assert 'initialLat: "19.43"' in res.text
+    assert 'initialLng: "-99.13"' in res.text
+    assert "maps.googleapis.com/maps/api/js?key=${encodeURIComponent(this.mapsApiKey)}&libraries=places&callback=${cb}" in res.text
+    assert "x-ref=\"map\"" in res.text
     assert f"/tasks/{task.id}" not in res.text
 
     app.dependency_overrides.clear()

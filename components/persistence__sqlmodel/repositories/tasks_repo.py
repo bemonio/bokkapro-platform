@@ -37,6 +37,7 @@ class TaskRepositorySqlModel(TaskRepository):
             lat=model.lat,
             lng=model.lng,
             address=model.address,
+            place_id=model.place_id,
             time_window_start=model.time_window_start,
             time_window_end=model.time_window_end,
             service_duration_minutes=model.service_duration_minutes,
@@ -121,7 +122,7 @@ class TaskRepositorySqlModel(TaskRepository):
         if model is None:
             raise ValueError("Task not found during update")
         for field in (
-            "office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end",
+            "office_id", "type", "status", "lat", "lng", "address", "place_id", "time_window_start", "time_window_end",
             "service_duration_minutes", "load_units", "priority", "reference", "notes", "updated_at"
         ):
             setattr(model, field, getattr(task, field))

@@ -39,6 +39,7 @@ def edit_office_form(
             "values": {
                 "name": office.name,
                 "address": office.address or "",
+                "place_id": office.place_id or "",
                 "lat": "" if office.lat is None else str(office.lat),
                 "lng": "" if office.lng is None else str(office.lng),
                 "storage_capacity": str(office.storage_capacity),
@@ -89,6 +90,7 @@ async def edit_office_ui(
         office_uuid=office_uuid,
         name=payload.name,
         address=payload.address,
+        place_id=payload.place_id,
         lat=payload.lat,
         lng=payload.lng,
         storage_capacity=payload.storage_capacity,

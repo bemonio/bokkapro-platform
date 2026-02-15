@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from fastapi import Request
@@ -15,4 +16,5 @@ def get_templates() -> Jinja2Templates:
     templates = Jinja2Templates(directory=str(templates_dir))
     templates.env.globals["t"] = translate
     templates.env.globals["url_with_lang"] = build_url
+    templates.env.globals["google_maps_api_key"] = os.getenv("GOOGLE_MAPS_API_KEY", "")
     return templates

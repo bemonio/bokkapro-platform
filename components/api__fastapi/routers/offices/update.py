@@ -21,6 +21,7 @@ def update_office_endpoint(
             office_uuid=office_uuid,
             name=payload.name,
             address=payload.address,
+            place_id=payload.place_id,
             lat=payload.lat,
             lng=payload.lng,
             storage_capacity=payload.storage_capacity,

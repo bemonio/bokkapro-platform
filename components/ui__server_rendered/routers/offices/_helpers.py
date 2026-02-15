@@ -33,6 +33,7 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[OfficeCreate | None,
     payload = {
         "name": (form_data.get("name") or "").strip(),
         "address": (form_data.get("address") or "").strip() or None,
+        "place_id": (form_data.get("place_id") or "").strip() or None,
         "lat": _as_float_or_none(form_data.get("lat")),
         "lng": _as_float_or_none(form_data.get("lng")),
         "storage_capacity": form_data.get("storage_capacity"),
@@ -41,15 +42,26 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[OfficeCreate | None,
     values = {k: "" if v is None else str(v) for k, v in payload.items()}
 
     try:
-        return OfficeCreate.model_validate(payload), values, {}
+        model = OfficeCreate.model_validate(payload)
     except ValidationError as exc:
         return None, values, validation_errors(exc)
+
+    errors: dict[str, str] = {}
+    if payload["lat"] is None:
+        errors["lat"] = "Latitude is required"
+    if payload["lng"] is None:
+        errors["lng"] = "Longitude is required"
+    if errors:
+        return None, values, errors
+
+    return model, values, {}
 
 
 def update_from_form(form_data: Mapping[str, str]) -> tuple[OfficeUpdate | None, dict[str, str], dict[str, str]]:
     payload = {
         "name": (form_data.get("name") or "").strip() or None,
         "address": (form_data.get("address") or "").strip() or None,
+        "place_id": (form_data.get("place_id") or "").strip() or None,
         "lat": _as_float_or_none(form_data.get("lat")),
         "lng": _as_float_or_none(form_data.get("lng")),
         "storage_capacity": _as_int_or_none(form_data.get("storage_capacity")),
@@ -58,15 +70,26 @@ def update_from_form(form_data: Mapping[str, str]) -> tuple[OfficeUpdate | None,
     values = {
         "name": "" if payload["name"] is None else str(payload["name"]),
         "address": "" if payload["address"] is None else str(payload["address"]),
+        "place_id": "" if payload["place_id"] is None else str(payload["place_id"]),
         "lat": "" if payload["lat"] is None else str(payload["lat"]),
         "lng": "" if payload["lng"] is None else str(payload["lng"]),
         "storage_capacity": "" if payload["storage_capacity"] is None else str(payload["storage_capacity"]),
     }
 
     try:
-        return OfficeUpdate.model_validate(payload), values, {}
+        model = OfficeUpdate.model_validate(payload)
     except ValidationError as exc:
         return None, values, validation_errors(exc)
+
+    errors: dict[str, str] = {}
+    if payload["lat"] is None:
+        errors["lat"] = "Latitude is required"
+    if payload["lng"] is None:
+        errors["lng"] = "Longitude is required"
+    if errors:
+        return None, values, errors
+
+    return model, values, {}
 
 
 def _as_float_or_none(value: str | None) -> float | None:

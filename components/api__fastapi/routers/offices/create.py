@@ -17,6 +17,7 @@ def create_office_endpoint(
         repository=repository,
         name=payload.name,
         address=payload.address,
+        place_id=payload.place_id,
         lat=payload.lat,
         lng=payload.lng,
         storage_capacity=payload.storage_capacity,

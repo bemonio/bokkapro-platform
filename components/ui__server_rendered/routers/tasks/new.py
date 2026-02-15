@@ -27,7 +27,7 @@ def new_task_form(
             "mode": "create",
             "form_action": "/tasks/new",
             "values": {
-                "office_id": "", "office_name": "", "type": "pickup", "status": "pending", "lat": "", "lng": "", "address": "", "time_window_start": "", "time_window_end": "", "service_duration_minutes": "0", "load_units": "0", "priority": "normal", "reference": "", "notes": ""
+                "office_id": "", "office_name": "", "type": "pickup", "status": "pending", "lat": "", "lng": "", "address": "", "place_id": "", "time_window_start": "", "time_window_end": "", "service_duration_minutes": "0", "load_units": "0", "priority": "normal", "reference": "", "notes": ""
             },
             "errors": {},
             "lang": lang,

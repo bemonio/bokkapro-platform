@@ -20,6 +20,7 @@ class TaskModel(SQLModel, table=True):
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     address: str | None = Field(default=None)
+    place_id: str | None = Field(default=None, index=True)
 
     time_window_start: datetime | None = Field(default=None)
     time_window_end: datetime | None = Field(default=None)
