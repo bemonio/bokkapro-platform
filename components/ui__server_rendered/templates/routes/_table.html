@@ -1,0 +1,40 @@
+<div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-slate-50 text-left text-slate-600"><tr>
+        <th class="px-4 py-3">{{ t(lang, "routes.service_date") }}</th>
+        <th class="px-4 py-3">{{ t(lang, "routes.status") }}</th>
+        <th class="px-4 py-3">{{ t(lang, "routes.office") }}</th>
+        <th class="px-4 py-3">{{ t(lang, "routes.vehicle") }}</th>
+        <th class="px-4 py-3">{{ t(lang, "routes.total_tasks") }}</th>
+        <th class="px-4 py-3 text-right">{{ t(lang, "common.actions") }}</th>
+      </tr></thead>
+      <tbody>
+      {% for route in routes %}
+      <tr class="border-t border-slate-200">
+        <td class="px-4 py-3">{{ route.service_date }}</td>
+        <td class="px-4 py-3">{{ t(lang, "routes.status_" ~ route.status) }}</td>
+        <td class="px-4 py-3">{{ route.office_name or "—" }}</td>
+        <td class="px-4 py-3">{{ route.vehicle_name or "—" }}</td>
+        <td class="px-4 py-3">{{ route.total_tasks }}</td>
+        <td class="px-4 py-3"><div class="flex gap-2 justify-end">
+            <a href="{{ url_with_lang('/routes/' ~ route.uuid, lang=lang) }}" class="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100">{{ t(lang, "routes.view") }}</a>
+            <a href="{{ url_with_lang('/routes/' ~ route.uuid ~ '/edit', lang=lang) }}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">{{ t(lang, "routes.edit") }}</a>
+            <form method="post" action="{{ url_with_lang('/routes/' ~ route.uuid ~ '/delete', lang=lang) }}"><button type="submit" class="inline-flex items-center rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100">{{ t(lang, "routes.delete") }}</button></form>
+        </div></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">{{ t(lang, "routes.no_results") }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="flex items-center justify-between text-sm mt-3">
+  <p class="text-slate-600">{{ t(lang, "routes.total") }}: {{ pagination.total }}</p>
+  <div class="flex items-center gap-2">
+    <a class="px-3 py-1 border rounded {% if not pagination.has_prev %}pointer-events-none opacity-50{% endif %}" href="/routes?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-get="/routes?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">{{ t(lang, "routes.prev") }}</a>
+    <span>{{ t(lang, "routes.page_of", page=pagination.page, total_pages=pagination.total_pages) }}</span>
+    <a class="px-3 py-1 border rounded {% if not pagination.has_next %}pointer-events-none opacity-50{% endif %}" href="/routes?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-get="/routes?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}" hx-target="#routes-table" hx-push-url="true">{{ t(lang, "routes.next") }}</a>
+  </div>
+</div>

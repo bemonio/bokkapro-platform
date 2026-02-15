@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="max-w-3xl">
+  <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
+  <form method="post" action="{{ form_action }}" class="bg-white rounded-lg border border-slate-200 p-6 space-y-4">
+    <div class="grid sm:grid-cols-2 gap-4">
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.office") }}</label>
+        <select name="office_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
+          <option value="">{{ t(lang, "routes.select_office") }}</option>
+          {% for office in office_options %}
+          <option value="{{ office.id }}" {% if values.office_id == office.id|string %}selected{% endif %}>{{ office.name }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.vehicle") }}</label>
+        <select name="vehicle_id" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>
+          <option value="">{{ t(lang, "routes.select_vehicle") }}</option>
+          {% for vehicle in vehicle_options %}
+          <option value="{{ vehicle.id }}" {% if values.vehicle_id == vehicle.id|string %}selected{% endif %}>{{ vehicle.name }}</option>
+          {% endfor %}
+        </select></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.service_date") }}</label><input type="date" name="service_date" value="{{ values.service_date }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.status") }}</label><select name="status" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}>{% for item in ['draft','planned','in_progress','completed','cancelled','failed'] %}<option value="{{ item }}" {% if values.status == item %}selected{% endif %}>{{ t(lang, "routes.status_" ~ item) }}</option>{% endfor %}</select></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.total_tasks") }}</label><input type="number" name="total_tasks" min="0" value="{{ values.total_tasks }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.total_distance_m") }}</label><input type="number" name="total_distance_m" min="0" value="{{ values.total_distance_m }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.total_duration_s") }}</label><input type="number" name="total_duration_s" min="0" value="{{ values.total_duration_s }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+      <div><label class="block text-sm font-medium mb-1">{{ t(lang, "routes.total_load") }}</label><input type="number" name="total_load" min="0" value="{{ values.total_load }}" class="w-full rounded-md border border-slate-300 px-3 py-2" {% if mode == 'view' %}disabled{% endif %}/></div>
+    </div>
+    {% if errors %}<p class="text-sm text-red-600">{{ errors|tojson }}</p>{% endif %}
+    <div class="flex gap-3 pt-2"><a href="{{ url_with_lang('/routes', lang=lang) }}" class="px-4 py-2 border border-slate-300 rounded-md">{{ t(lang, "common.back") }}</a>{% if mode != 'view' %}<button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-md">{{ t(lang, "common.save") }}</button>{% endif %}</div>
+  </form>
+</div>
+{% endblock %}
