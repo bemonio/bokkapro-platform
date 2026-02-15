@@ -14,11 +14,11 @@
         <a href="{{ url_with_lang('/', lang=lang) }}" class="font-semibold text-lg">{{ t(lang, "common.app_name") }}</a>
         <nav class="space-x-4 text-sm flex items-center">
           <a class="hover:underline" href="{{ url_with_lang('/', lang=lang) }}">{{ t(lang, "menu.dashboard") }}</a>
+          <a class="hover:underline" href="{{ url_with_lang('/planning', lang=lang) }}">{{ t(lang, "menu.planning") }}</a>
           <a class="hover:underline" href="{{ url_with_lang('/offices', lang=lang) }}">{{ t(lang, "menu.offices") }}</a>
           <a class="hover:underline" href="{{ url_with_lang('/vehicles', lang=lang) }}">{{ t(lang, "menu.vehicles") }}</a>
           <span class="text-slate-400 cursor-not-allowed" title="Coming soon">{{ t(lang, "menu.crews") }}</span>
           <a class="hover:underline" href="{{ url_with_lang('/tasks', lang=lang) }}">{{ t(lang, "menu.tasks") }}</a>
-          <a class="hover:underline" href="{{ url_with_lang('/planning', lang=lang) }}">{{ t(lang, "menu.planning") }}</a>
           <a class="hover:underline" href="{{ url_with_lang('/routes', lang=lang) }}">{{ t(lang, "menu.routes") }}</a>
           <a class="hover:underline" href="{{ url_with_lang('/route-tasks', lang=lang) }}">{{ t(lang, "menu.route_tasks") }}</a>
           <div class="inline-flex items-center gap-2 pl-2 border-l border-slate-700">
