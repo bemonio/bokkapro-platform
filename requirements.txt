@@ -7,3 +7,4 @@ pytest
 ruff
 httpx
 python-multipart
+ortools
