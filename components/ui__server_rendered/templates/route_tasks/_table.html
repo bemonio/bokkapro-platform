@@ -49,3 +49,24 @@
     </table>
   </div>
 </div>
+
+<div class="flex items-center justify-between text-sm mt-3">
+  <p class="text-slate-600">{{ t(lang, "route_tasks.total") }}: {{ pagination.total }}</p>
+  <div class="flex items-center gap-2">
+    <a
+      class="px-3 py-1 border rounded {% if not pagination.has_prev %}pointer-events-none opacity-50{% endif %}"
+      href="/route-tasks?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
+      hx-get="/route-tasks?page={{ pagination.prev_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
+      hx-target="#route-tasks-table"
+      hx-push-url="true"
+    >{{ t(lang, "route_tasks.prev") }}</a>
+    <span>{{ t(lang, "route_tasks.page_of", page=pagination.page, total_pages=pagination.total_pages) }}</span>
+    <a
+      class="px-3 py-1 border rounded {% if not pagination.has_next %}pointer-events-none opacity-50{% endif %}"
+      href="/route-tasks?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
+      hx-get="/route-tasks?page={{ pagination.next_page }}&page_size={{ pagination.page_size }}&search={{ search|urlencode }}&sort={{ sort }}&order={{ order }}&lang={{ lang }}"
+      hx-target="#route-tasks-table"
+      hx-push-url="true"
+    >{{ t(lang, "route_tasks.next") }}</a>
+  </div>
+</div>
