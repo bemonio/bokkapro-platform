@@ -19,7 +19,7 @@ def list_route_tasks_ui(
     templates: Jinja2Templates = Depends(get_templates),
 ):
     page = max(int(request.query_params.get("page", 1)), 1)
-    page_size = max(min(int(request.query_params.get("page_size", 10)), 100), 1)
+    page_size = max(min(int(request.query_params.get("page_size", 20)), 100), 1)
     search = request.query_params.get("search")
     sort = request.query_params.get("sort", "sequence_order")
     order = request.query_params.get("order", "asc")
