@@ -77,12 +77,25 @@ def test_task_view_shows_leaflet_map_preview() -> None:
 
     res = client.get(f"/tasks/{task.uuid}")
     assert res.status_code == 200
-    assert 'x-data="taskForm({' in res.text
+    assert "x-data='taskForm({" in res.text
     assert 'initialLat: "19.43"' in res.text
     assert 'initialLng: "-99.13"' in res.text
     assert "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" in res.text
     assert "nominatimBaseUrl:" in res.text
     assert "x-ref=\"map\"" in res.text
     assert f"/tasks/{task.id}" not in res.text
+
+    app.dependency_overrides.clear()
+
+
+def test_task_new_form_supports_map_pin_selection() -> None:
+    client, _session = _build_client()
+
+    res = client.get("/tasks/new")
+    assert res.status_code == 200
+    assert 'this.map.on("click", async (event) => {' in res.text
+    assert 'await this.onMapClicked(event.latlng);' in res.text
+    assert 'async onMapClicked(latLng) {' in res.text
+    assert "Click on the map to place the pin and get the nearest address." in res.text
 
     app.dependency_overrides.clear()
