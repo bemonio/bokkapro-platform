@@ -23,6 +23,7 @@ TRANSLATIONS = {
             "vehicles": "Vehicles",
             "crews": "Crews",
             "tasks": "Tasks",
+            "planning": "Planning",
             "routes": "Routes",
             "route_tasks": "Route Tasks",
         },
@@ -132,6 +133,29 @@ TRANSLATIONS = {
             "status_failed": "Failed"
         },
 
+
+        "planning": {
+            "title": "Daily Planning",
+            "dispatch_hint": "Dispatcher view for quick routing decisions",
+            "service_date": "Service date",
+            "office": "Office",
+            "select_office": "Select an office",
+            "generate": "Generate Routes",
+            "generated": "Routes generated successfully",
+            "view_route": "View Route",
+            "total_tasks": "Tasks",
+            "total_load": "Load",
+            "total_distance_m": "Distance (m)",
+            "no_routes": "No routes to display for current filters.",
+            "route_detail_title": "Route Detail",
+            "stops": "Stops",
+            "drag_hint": "Drag and drop stops to reorder route execution.",
+            "recalculate": "Recalculate",
+            "save_order": "Save Order",
+            "order_saved": "Stop order saved",
+            "recalculated": "Route recalculated",
+            "map": "Route Map"
+        },
         "route_tasks": {
             "title": "Route Tasks",
             "new_route_task": "New Route Task",
@@ -235,6 +259,7 @@ TRANSLATIONS = {
             "vehicles": "Vehículos",
             "crews": "Cuadrillas",
             "tasks": "Tareas",
+            "planning": "Planificación",
             "routes": "Rutas",
             "route_tasks": "Tareas de ruta",
         },
@@ -344,6 +369,29 @@ TRANSLATIONS = {
             "status_failed": "Fallida"
         },
 
+
+        "planning": {
+            "title": "Planificación diaria",
+            "dispatch_hint": "Vista de despacho para decisiones rápidas",
+            "service_date": "Fecha de servicio",
+            "office": "Oficina",
+            "select_office": "Selecciona una oficina",
+            "generate": "Generar rutas",
+            "generated": "Rutas generadas correctamente",
+            "view_route": "Ver ruta",
+            "total_tasks": "Tareas",
+            "total_load": "Carga",
+            "total_distance_m": "Distancia (m)",
+            "no_routes": "No hay rutas para los filtros seleccionados.",
+            "route_detail_title": "Detalle de ruta",
+            "stops": "Paradas",
+            "drag_hint": "Arrastra y suelta paradas para reordenar la ruta.",
+            "recalculate": "Recalcular",
+            "save_order": "Guardar orden",
+            "order_saved": "Orden guardado",
+            "recalculated": "Ruta recalculada",
+            "map": "Mapa de ruta"
+        },
         "route_tasks": {
             "title": "Tareas de ruta",
             "new_route_task": "Nueva tarea de ruta",
