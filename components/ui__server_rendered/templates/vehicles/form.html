@@ -1,6 +1,8 @@
 {% extends "layout.html" %}
 
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <div
   class="w-full"
   x-data="vehicleForm({
@@ -8,7 +10,8 @@
     initialLng: '{{ values.lng }}',
     initialOfficeUuid: '{{ values.office_uuid|default('') }}',
     initialOfficeName: '{{ values.office_name|default('') }}',
-    lang: '{{ lang }}'
+    lang: '{{ lang }}',
+    mapsDisabledText: {{ t(lang, 'offices.maps_unavailable')|tojson }}
   })"
 >
   <h1 class="text-2xl font-bold mb-6">{{ title }}</h1>
@@ -117,16 +120,15 @@
 
     <section class="bg-white border border-slate-200 rounded-lg p-3 lg:sticky lg:top-4">
       <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") }}</h2>
-      <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50">
-        <iframe title="Google map preview" class="h-full w-full" loading="lazy" referrerpolicy="no-referrer-when-downgrade" :src="mapUrl"></iframe>
-      </div>
+      <div x-ref="map" class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50"></div>
+      <p class="text-xs text-amber-700 mt-2" x-show="mapsWarning" x-text="mapsWarning"></p>
       <p class="text-xs text-slate-500 mt-2">{{ t(lang, "offices.showing_coordinates") }}: <span x-text="lat || '0'"></span>, <span x-text="lng || '0'"></span></p>
     </section>
   </div>
 </div>
 
 <script>
-  function vehicleForm({ initialLat, initialLng, initialOfficeUuid, initialOfficeName, lang }) {
+  function vehicleForm({ initialLat, initialLng, initialOfficeUuid, initialOfficeName, lang, mapsDisabledText }) {
     return {
       officeOpen: false,
       officeSearch: "",
@@ -147,10 +149,47 @@
       },
       lat: initialLat || "",
       lng: initialLng || "",
-      mapUrl: "",
+      mapsDisabledText,
+      mapsWarning: "",
+      map: null,
+      marker: null,
 
       init() {
+        this.initMap();
         this.refreshMap();
+      },
+      initMap() {
+        if (!window.L) {
+          this.mapsWarning = this.mapsDisabledText;
+          return;
+        }
+        const { lat, lng } = this.getValidCoordinates();
+        this.map = L.map(this.$refs.map, { zoomControl: true }).setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(this.map);
+        this.marker = L.marker([lat, lng], { draggable: '{{ mode }}' !== 'view' }).addTo(this.map);
+        if ('{{ mode }}' !== 'view') {
+          this.marker.on('dragend', (event) => {
+            const position = event.target.getLatLng();
+            this.lat = String(position.lat.toFixed(6));
+            this.lng = String(position.lng.toFixed(6));
+          });
+          this.map.on('click', (event) => {
+            this.lat = String(event.latlng.lat.toFixed(6));
+            this.lng = String(event.latlng.lng.toFixed(6));
+            this.refreshMap();
+          });
+        }
+      },
+      getValidCoordinates() {
+        const lat = parseFloat(this.lat);
+        const lng = parseFloat(this.lng);
+        return {
+          lat: Number.isFinite(lat) ? lat : 0,
+          lng: Number.isFinite(lng) ? lng : 0,
+        };
       },
 
       toggleOfficeDropdown() {
@@ -253,9 +292,12 @@
         this.closeOfficeDropdown();
       },
       refreshMap() {
-        const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
-        const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
-        this.mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent((Number(lng)-0.01).toFixed(6))}%2C${encodeURIComponent((Number(lat)-0.01).toFixed(6))}%2C${encodeURIComponent((Number(lng)+0.01).toFixed(6))}%2C${encodeURIComponent((Number(lat)+0.01).toFixed(6))}&layer=mapnik&marker=${encodeURIComponent(lat)}%2C${encodeURIComponent(lng)}`;
+        if (!this.map || !this.marker) {
+          return;
+        }
+        const { lat, lng } = this.getValidCoordinates();
+        this.marker.setLatLng([lat, lng]);
+        this.map.setView([lat, lng], this.map.getZoom(), { animate: false });
       },
     };
   }
