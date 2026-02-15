@@ -39,7 +39,7 @@ def new_route_form(
             "title": translate(lang, "routes.form_new_title"),
             "mode": "create",
             "form_action": "/routes/new",
-            "values": {"office_id": "", "vehicle_id": "", "service_date": "", "status": "draft", "total_tasks": "0", "total_distance_m": "", "total_duration_s": "", "total_load": ""},
+            "values": {"office_id": "", "office_name": "", "vehicle_id": "", "vehicle_name": "", "service_date": "", "status": "draft", "total_tasks": "0", "total_distance_m": "", "total_duration_s": "", "total_load": ""},
             "errors": {},
             "office_options": office_options,
             "vehicle_options": vehicle_options,

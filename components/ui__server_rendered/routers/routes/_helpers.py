@@ -30,6 +30,8 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[RouteCreate | None, 
         "total_load": _as_int_or_none(form_data.get("total_load")),
     }
     values = {k: "" if v is None else str(v) for k, v in payload.items()}
+    values["office_name"] = form_data.get("office_name") or ""
+    values["vehicle_name"] = form_data.get("vehicle_name") or ""
     try:
         return RouteCreate.model_validate(payload), values, {}
     except ValidationError as exc:
@@ -48,6 +50,8 @@ def update_from_form(form_data: Mapping[str, str]) -> tuple[RouteUpdate | None, 
         "total_load": _as_int_or_none(form_data.get("total_load")),
     }
     values = {k: "" if v is None else str(v) for k, v in payload.items()}
+    values["office_name"] = form_data.get("office_name") or ""
+    values["vehicle_name"] = form_data.get("vehicle_name") or ""
     try:
         return RouteUpdate.model_validate(payload), values, {}
     except ValidationError as exc:

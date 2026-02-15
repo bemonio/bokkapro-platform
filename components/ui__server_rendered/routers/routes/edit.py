@@ -48,7 +48,11 @@ def edit_route_form(
             "mode": "edit",
             "entity_uuid": route.uuid,
             "form_action": f"/routes/{route.uuid}/edit",
-            "values": {k: "" if getattr(route, k) is None else str(getattr(route, k)) for k in ["office_id", "vehicle_id", "service_date", "status", "total_tasks", "total_distance_m", "total_duration_s", "total_load"]},
+            "values": {
+                **{k: "" if getattr(route, k) is None else str(getattr(route, k)) for k in ["office_id", "vehicle_id", "service_date", "status", "total_tasks", "total_distance_m", "total_duration_s", "total_load"]},
+                "office_name": route.office_name or "",
+                "vehicle_name": route.vehicle_name or "",
+            },
             "errors": {},
             "office_options": office_options,
             "vehicle_options": vehicle_options,
