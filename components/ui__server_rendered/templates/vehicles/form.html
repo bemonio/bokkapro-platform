@@ -255,7 +255,7 @@
       refreshMap() {
         const lat = this.lat && this.lat.trim() !== "" ? this.lat.trim() : "0";
         const lng = this.lng && this.lng.trim() !== "" ? this.lng.trim() : "0";
-        this.mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&z=15&output=embed`;
+        this.mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${encodeURIComponent((Number(lng)-0.01).toFixed(6))}%2C${encodeURIComponent((Number(lat)-0.01).toFixed(6))}%2C${encodeURIComponent((Number(lng)+0.01).toFixed(6))}%2C${encodeURIComponent((Number(lat)+0.01).toFixed(6))}&layer=mapnik&marker=${encodeURIComponent(lat)}%2C${encodeURIComponent(lng)}`;
       },
     };
   }

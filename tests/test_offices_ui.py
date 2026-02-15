@@ -383,6 +383,6 @@ def test_office_edit_map_config_is_valid_when_address_has_quotes() -> None:
     assert res.status_code == 200
     assert "x-data='locationForm({" in res.text
     assert 'initialAddress: "Address \\"Office 1\\""' in res.text
-    assert 'mapsApiKey: ""' in res.text
+    assert 'nominatimBaseUrl: "https://nominatim.ingeniouskey.com"' in res.text
 
     app.dependency_overrides.clear()
