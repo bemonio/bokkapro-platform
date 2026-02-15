@@ -9,6 +9,7 @@ class Office:
     tenant_id: str | None
     name: str
     address: str | None
+    place_id: str | None
     lat: float | None
     lng: float | None
     storage_capacity: int

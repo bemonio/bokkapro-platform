@@ -28,6 +28,7 @@ class OfficeRepositorySqlModel(OfficeRepository):
             tenant_id=model.tenant_id,
             name=model.name,
             address=model.address,
+            place_id=model.place_id,
             lat=model.lat,
             lng=model.lng,
             storage_capacity=model.storage_capacity,
@@ -43,6 +44,7 @@ class OfficeRepositorySqlModel(OfficeRepository):
             tenant_id=entity.tenant_id,
             name=entity.name,
             address=entity.address,
+            place_id=entity.place_id,
             lat=entity.lat,
             lng=entity.lng,
             storage_capacity=entity.storage_capacity,
@@ -118,6 +120,7 @@ class OfficeRepositorySqlModel(OfficeRepository):
 
         model.name = office.name
         model.address = office.address
+        model.place_id = office.place_id
         model.lat = office.lat
         model.lng = office.lng
         model.storage_capacity = office.storage_capacity

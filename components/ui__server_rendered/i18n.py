@@ -93,6 +93,8 @@ TRANSLATIONS = {
             "storage_capacity": "Storage Capacity",
             "name_required": "Name is required",
             "storage_required": "Storage capacity is required",
+            "geocode_failed": "Unable to geocode the selected location.",
+            "maps_unavailable": "Google Maps is unavailable. Configure GOOGLE_MAPS_API_KEY.",
         },
 
         "routes": {
@@ -329,6 +331,8 @@ TRANSLATIONS = {
             "storage_capacity": "Capacidad de almacenamiento",
             "name_required": "El nombre es obligatorio",
             "storage_required": "La capacidad de almacenamiento es obligatoria",
+            "geocode_failed": "No se pudo geocodificar la ubicación seleccionada.",
+            "maps_unavailable": "Google Maps no está disponible. Configura GOOGLE_MAPS_API_KEY.",
         },
 
         "routes": {

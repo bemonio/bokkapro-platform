@@ -14,6 +14,7 @@ class OfficeModel(SQLModel, table=True):
     tenant_id: str | None = Field(default=None, index=True)
     name: str = Field(min_length=2)
     address: str | None = None
+    place_id: str | None = Field(default=None, index=True)
     lat: float | None = Field(default=None, ge=-90, le=90)
     lng: float | None = Field(default=None, ge=-180, le=180)
     storage_capacity: int = Field(default=0, ge=0)

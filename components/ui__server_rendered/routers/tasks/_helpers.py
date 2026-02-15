@@ -27,6 +27,7 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[TaskCreate | None, d
         "lat": _as_float_or_none(form_data.get("lat")),
         "lng": _as_float_or_none(form_data.get("lng")),
         "address": (form_data.get("address") or "").strip() or None,
+        "place_id": (form_data.get("place_id") or "").strip() or None,
         "time_window_start": _as_datetime_or_none(form_data.get("time_window_start")),
         "time_window_end": _as_datetime_or_none(form_data.get("time_window_end")),
         "service_duration_minutes": form_data.get("service_duration_minutes"),
@@ -40,9 +41,19 @@ def create_from_form(form_data: Mapping[str, str]) -> tuple[TaskCreate | None, d
     values["office_name"] = office_name
 
     try:
-        return TaskCreate.model_validate(payload), values, {}
+        model = TaskCreate.model_validate(payload)
     except ValidationError as exc:
         return None, values, validation_errors(exc)
+
+    errors: dict[str, str] = {}
+    if payload["lat"] is None:
+        errors["lat"] = "Latitude is required"
+    if payload["lng"] is None:
+        errors["lng"] = "Longitude is required"
+    if errors:
+        return None, values, errors
+
+    return model, values, {}
 
 
 def update_from_form(form_data: Mapping[str, str]) -> tuple[TaskUpdate | None, dict[str, str], dict[str, str]]:
@@ -54,6 +65,7 @@ def update_from_form(form_data: Mapping[str, str]) -> tuple[TaskUpdate | None, d
         "lat": _as_float_or_none(form_data.get("lat")),
         "lng": _as_float_or_none(form_data.get("lng")),
         "address": (form_data.get("address") or "").strip() or None,
+        "place_id": (form_data.get("place_id") or "").strip() or None,
         "time_window_start": _as_datetime_or_none(form_data.get("time_window_start")),
         "time_window_end": _as_datetime_or_none(form_data.get("time_window_end")),
         "service_duration_minutes": _as_int_or_none(form_data.get("service_duration_minutes")),
@@ -67,9 +79,19 @@ def update_from_form(form_data: Mapping[str, str]) -> tuple[TaskUpdate | None, d
     values["office_name"] = office_name
 
     try:
-        return TaskUpdate.model_validate(payload), values, {}
+        model = TaskUpdate.model_validate(payload)
     except ValidationError as exc:
         return None, values, validation_errors(exc)
+
+    errors: dict[str, str] = {}
+    if payload["lat"] is None:
+        errors["lat"] = "Latitude is required"
+    if payload["lng"] is None:
+        errors["lng"] = "Longitude is required"
+    if errors:
+        return None, values, errors
+
+    return model, values, {}
 
 
 def _as_int_or_none(value: str | None) -> int | None | str:

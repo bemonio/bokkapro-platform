@@ -35,7 +35,7 @@ def edit_task_form(
         if office is not None:
             office_name = office.name
 
-    values = {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]}
+    values = {k: "" if getattr(task, k) is None else str(getattr(task, k)) for k in ["office_id", "type", "status", "lat", "lng", "address", "place_id", "time_window_start", "time_window_end", "service_duration_minutes", "load_units", "priority", "reference", "notes"]}
     values["office_name"] = office_name
 
     return templates.TemplateResponse(
