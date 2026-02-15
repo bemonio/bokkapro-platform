@@ -71,6 +71,7 @@
     <section class="bg-white border border-slate-200 rounded-lg p-3 lg:sticky lg:top-4">
       <h2 class="text-base font-semibold mb-3">{{ t(lang, "offices.map_location") if t is defined and lang is defined else "Map location" }}</h2>
       <div class="aspect-[4/3] w-full overflow-hidden rounded-md border border-slate-200 bg-slate-50" x-ref="map"></div>
+      <p class="text-xs text-slate-500 mt-2">{{ t(lang, "offices.map_select_hint") if t is defined and lang is defined else "Click on the map to place the pin and get the nearest address." }}</p>
       <p class="text-xs text-slate-500 mt-2">{{ t(lang, "offices.showing_coordinates") if t is defined and lang is defined else "Showing coordinates" }}: <span x-text="lat || '—'"></span>, <span x-text="lng || '—'"></span></p>
       <p class="text-xs text-amber-700 mt-2" x-show="mapsWarning" x-text="mapsWarning"></p>
     </section>
@@ -117,6 +118,11 @@
           const p = this.marker.getLatLng();
           await this.onMarkerMoved(p);
         });
+        if (!this.isReadOnly) {
+          this.map.on("click", async (event) => {
+            await this.onMapClicked(event.latlng);
+          });
+        }
         await this.initializePosition();
       },
       async fetchSuggestions() {
@@ -170,6 +176,10 @@
         } catch (_e) {
           this.geoError = this.geocodeErrorText;
         }
+      },
+      async onMapClicked(latLng) {
+        this.setMarkerPosition({ lat: latLng.lat, lng: latLng.lng }, true);
+        await this.onMarkerMoved(latLng);
       },
       async reverseGeocode(latLng) {
         const query = new URLSearchParams({ lat: String(latLng.lat), lon: String(latLng.lng), format: "json" });
