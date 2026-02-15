@@ -31,6 +31,7 @@ def test_planning_page_renders() -> None:
     assert res.status_code == 200
     assert "Daily Planning" in res.text
     assert "Generate Routes" in res.text
-    assert "Ops Office" in res.text
+    assert "Select an office" in res.text
+    assert "/api/offices?" in res.text
 
     app.dependency_overrides.clear()
