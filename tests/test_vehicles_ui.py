@@ -55,6 +55,8 @@ def test_vehicle_new_form_uses_async_office_dropdown() -> None:
     assert res.status_code == 200
     assert 'name="office_uuid"' in res.text
     assert '/api/offices?' in res.text
+    assert "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" in res.text
+    assert 'x-ref="map"' in res.text
 
     app.dependency_overrides.clear()
 
