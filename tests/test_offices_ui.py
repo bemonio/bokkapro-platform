@@ -355,3 +355,34 @@ def test_office_edit_hides_numeric_id_and_shows_uuid() -> None:
     assert f"#{office_id}" not in res.text
 
     app.dependency_overrides.clear()
+
+
+def test_office_edit_map_config_is_valid_when_address_has_quotes() -> None:
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    SQLModel.metadata.create_all(engine)
+
+    def _session_override() -> Generator[Session, None, None]:
+        with Session(engine) as session:
+            yield session
+
+    app.dependency_overrides[get_session] = _session_override
+    client = TestClient(app)
+
+    with Session(engine) as session:
+        office = OfficeModel(name="Central", address='Address "Office 1"', lat=10.44, lng=-63.46, storage_capacity=99)
+        session.add(office)
+        session.commit()
+        session.refresh(office)
+        office_uuid = office.uuid
+
+    res = client.get(f"/offices/{office_uuid}/edit?lang=es")
+    assert res.status_code == 200
+    assert "x-data='locationForm({" in res.text
+    assert 'initialAddress: "Address \\"Office 1\\""' in res.text
+    assert 'mapsApiKey: ""' in res.text
+
+    app.dependency_overrides.clear()
