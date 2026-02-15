@@ -46,5 +46,10 @@ def test_routes_ui_list_and_i18n() -> None:
     assert "Planificada" in res.text
     assert "Centro" in res.text
     assert "Unidad 1" in res.text
+    assert "sort=service_date" in res.text
+    assert "sort=status" in res.text
+    assert "sort=office_id" in res.text
+    assert "sort=vehicle_id" in res.text
+    assert "sort=total_tasks" in res.text
 
     app.dependency_overrides.clear()

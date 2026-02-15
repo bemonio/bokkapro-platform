@@ -43,6 +43,11 @@ def test_tasks_ui_list_and_i18n() -> None:
     assert "Anterior" in res.text
     assert "Página 1 / 1" in res.text
     assert "Siguiente" in res.text
+    assert "sort=reference" in res.text
+    assert "sort=type" in res.text
+    assert "sort=status" in res.text
+    assert "sort=office_id" in res.text
+    assert "sort=priority" in res.text
 
     app.dependency_overrides.clear()
 
