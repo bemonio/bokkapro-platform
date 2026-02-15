@@ -1,0 +1,153 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<div x-data="routeDetailPage('{{ route_uuid }}')" x-init="init()" class="space-y-4">
+  <div class="bg-white border border-slate-200 rounded-xl p-4">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <h1 class="text-2xl font-bold" x-text="summary.vehicle_name || 'Route'"></h1>
+      <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold" :class="statusClass(summary.status)" x-text="summary.status || '-' "></span>
+      <span class="text-sm text-slate-600">{{ t(lang, "planning.service_date") }}: <strong x-text="summary.service_date || '-' "></strong></span>
+      <span class="text-sm text-slate-600">{{ t(lang, "planning.total_tasks") }}: <strong x-text="summary.total_tasks ?? 0"></strong></span>
+      <span class="text-sm text-slate-600">{{ t(lang, "planning.total_load") }}: <strong x-text="summary.total_load ?? '-' "></strong></span>
+      <span class="text-sm text-slate-600">{{ t(lang, "planning.total_distance_m") }}: <strong x-text="summary.total_distance_m ?? '-' "></strong></span>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-4">
+    <section class="bg-white border border-slate-200 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">{{ t(lang, "planning.stops") }}</h2>
+        <div class="flex gap-2">
+          <button @click="recalculate" class="text-sm px-3 py-2 rounded-md bg-slate-100 hover:bg-slate-200">{{ t(lang, "planning.recalculate") }}</button>
+          <button @click="saveOrder" class="text-sm px-3 py-2 rounded-md bg-slate-900 text-white">{{ t(lang, "planning.save_order") }}</button>
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mb-2">{{ t(lang, "planning.drag_hint") }}</p>
+      <ul class="space-y-2" @dragover.prevent @drop="dropOnList">
+        <template x-for="(item, idx) in tasks" :key="item.task_uuid">
+          <li draggable="true" @dragstart="startDrag(idx)" @dragover.prevent @drop="dropOnItem(idx)" class="border border-slate-200 rounded-lg p-3 bg-slate-50 cursor-move">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="text-sm font-semibold"><span class="text-slate-500 mr-2" x-text="`#${idx+1}`"></span><span x-text="item.type"></span></div>
+                <div class="text-sm text-slate-600" x-text="item.address || `${item.lat ?? '-'}, ${item.lng ?? '-'}`"></div>
+                <div class="text-xs text-slate-500 mt-1">{{ t(lang, "planning.total_load") }}: <span x-text="item.load_units"></span></div>
+              </div>
+              <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold" :class="statusClass(item.status)" x-text="item.status"></span>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </section>
+
+    <section class="bg-white border border-slate-200 rounded-xl p-4">
+      <h2 class="font-semibold mb-3">{{ t(lang, "planning.map") }}</h2>
+      <div id="route-map" class="h-[520px] rounded-lg border border-slate-200 bg-slate-100"></div>
+    </section>
+  </div>
+  <div class="text-sm" x-show="message" x-text="message" :class="error ? 'text-red-600' : 'text-slate-600'"></div>
+</div>
+
+<script>
+function routeDetailPage(routeUuid) {
+  return {
+    routeUuid,
+    summary: {},
+    office: {},
+    tasks: [],
+    dragIndex: null,
+    map: null,
+    markers: [],
+    polyline: null,
+    message: '',
+    error: false,
+    async init() {
+      await this.load();
+      this.initMap();
+      this.renderMap();
+    },
+    async load() {
+      const res = await fetch(`/api/routes/${this.routeUuid}/detail`);
+      if (!res.ok) return;
+      const data = await res.json();
+      this.summary = data.route || {};
+      this.office = data.office || {};
+      this.tasks = data.tasks || [];
+    },
+    initMap() {
+      if (!window.L) return;
+      this.map = L.map('route-map').setView([this.office.lat || 0, this.office.lng || 0], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(this.map);
+    },
+    renderMap() {
+      if (!this.map || !window.L) return;
+      this.markers.forEach(m => this.map.removeLayer(m));
+      this.markers = [];
+      if (this.polyline) this.map.removeLayer(this.polyline);
+
+      const points = [];
+      if (this.office.lat != null && this.office.lng != null) {
+        const depot = L.marker([this.office.lat, this.office.lng]).addTo(this.map).bindPopup('Depot');
+        this.markers.push(depot);
+        points.push([this.office.lat, this.office.lng]);
+      }
+      this.tasks.forEach((task, idx) => {
+        if (task.lat == null || task.lng == null) return;
+        const marker = L.marker([task.lat, task.lng]).addTo(this.map).bindPopup(`Stop ${idx+1}`);
+        this.markers.push(marker);
+        points.push([task.lat, task.lng]);
+      });
+      if (points.length > 1) {
+        this.polyline = L.polyline(points, { color: '#0f172a' }).addTo(this.map);
+        this.map.fitBounds(this.polyline.getBounds(), { padding: [20, 20] });
+      }
+    },
+    startDrag(index) { this.dragIndex = index; },
+    dropOnItem(index) {
+      if (this.dragIndex == null || this.dragIndex === index) return;
+      const [moved] = this.tasks.splice(this.dragIndex, 1);
+      this.tasks.splice(index, 0, moved);
+      this.dragIndex = null;
+      this.renderMap();
+    },
+    dropOnList() { this.dragIndex = null; },
+    async saveOrder() {
+      this.error = false;
+      this.message = '';
+      const orderedTaskUuids = this.tasks.map(t => t.task_uuid);
+      const res = await fetch(`/api/routes/${this.routeUuid}/tasks/reorder`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedTaskUuids })
+      });
+      if (!res.ok) {
+        this.error = true;
+        this.message = 'Failed to save order';
+        return;
+      }
+      this.message = '{{ t(lang, "planning.order_saved") }}';
+    },
+    async recalculate() {
+      this.error = false;
+      this.message = '';
+      const res = await fetch(`/api/routes/${this.routeUuid}/recalculate`, { method: 'POST' });
+      if (!res.ok) {
+        this.error = true;
+        this.message = 'Failed to recalculate route';
+        return;
+      }
+      this.message = '{{ t(lang, "planning.recalculated") }}';
+      await this.load();
+      this.renderMap();
+    },
+    statusClass(status) {
+      if (status === 'completed') return 'bg-emerald-100 text-emerald-700';
+      if (status === 'in_progress') return 'bg-amber-100 text-amber-800';
+      return 'bg-blue-100 text-blue-700';
+    }
+  }
+}
+</script>
+{% endblock %}

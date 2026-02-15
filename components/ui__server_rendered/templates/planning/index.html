@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div x-data="planningPage()" x-init="init()" class="space-y-5">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold">{{ t(lang, "planning.title") }}</h1>
+    <span class="text-sm text-slate-500">{{ t(lang, "planning.dispatch_hint") }}</span>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl p-4 grid md:grid-cols-4 gap-3 items-end">
+    <div>
+      <label class="block text-xs uppercase tracking-wide text-slate-500 mb-1">{{ t(lang, "planning.service_date") }}</label>
+      <input type="date" x-model="serviceDate" class="w-full rounded-md border border-slate-300 px-3 py-2" />
+    </div>
+    <div class="md:col-span-2">
+      <label class="block text-xs uppercase tracking-wide text-slate-500 mb-1">{{ t(lang, "planning.office") }}</label>
+      <select x-model="officeUuid" class="w-full rounded-md border border-slate-300 px-3 py-2">
+        <option value="">{{ t(lang, "planning.select_office") }}</option>
+        {% for office in offices %}
+        <option value="{{ office.uuid }}">{{ office.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button @click="generateRoutes" :disabled="busy || !officeUuid" class="bg-slate-900 text-white rounded-md px-4 py-2 text-sm disabled:opacity-50">{{ t(lang, "planning.generate") }}</button>
+  </div>
+
+  <div class="text-sm" x-show="message" x-text="message" :class="error ? 'text-red-600' : 'text-slate-600'"></div>
+
+  <div class="grid lg:grid-cols-2 gap-4">
+    <template x-for="route in routes" :key="route.uuid">
+      <article class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+        <div class="flex items-start justify-between">
+          <div>
+            <h2 class="font-semibold text-lg" x-text="route.vehicle_name"></h2>
+            <div class="mt-2">
+              <span class="inline-flex px-2 py-1 rounded-full text-xs font-semibold" :class="statusClass(route.status)" x-text="route.status"></span>
+            </div>
+          </div>
+          <a :href="`/routes/${route.uuid}?lang={{ lang }}`" class="text-sm bg-slate-100 hover:bg-slate-200 rounded-md px-3 py-2">{{ t(lang, "planning.view_route") }}</a>
+        </div>
+        <dl class="mt-4 grid grid-cols-3 gap-3 text-sm">
+          <div><dt class="text-slate-500">{{ t(lang, "planning.total_tasks") }}</dt><dd class="font-semibold" x-text="route.total_tasks"></dd></div>
+          <div><dt class="text-slate-500">{{ t(lang, "planning.total_load") }}</dt><dd class="font-semibold" x-text="route.total_load ?? '-' "></dd></div>
+          <div><dt class="text-slate-500">{{ t(lang, "planning.total_distance_m") }}</dt><dd class="font-semibold" x-text="route.total_distance_m ?? '-' "></dd></div>
+        </dl>
+      </article>
+    </template>
+  </div>
+  <div x-show="!routes.length" class="text-sm text-slate-500">{{ t(lang, "planning.no_routes") }}</div>
+</div>
+
+<script>
+function planningPage() {
+  return {
+    serviceDate: '{{ today }}',
+    officeUuid: '',
+    routes: [],
+    busy: false,
+    message: '',
+    error: false,
+    init() {},
+    async fetchRoutes() {
+      if (!this.officeUuid) return;
+      this.busy = true;
+      this.message = '';
+      try {
+        const res = await fetch(`/api/routes/planning?service_date=${this.serviceDate}&office_uuid=${this.officeUuid}`);
+        if (!res.ok) throw new Error('Failed to fetch routes');
+        const data = await res.json();
+        this.routes = data.data || [];
+      } catch (e) {
+        this.error = true;
+        this.message = e.message;
+      } finally {
+        this.busy = false;
+      }
+    },
+    async generateRoutes() {
+      if (!this.officeUuid) return;
+      this.busy = true;
+      this.error = false;
+      this.message = '';
+      try {
+        const res = await fetch(`/api/routes/generate?service_date=${this.serviceDate}&office_uuid=${this.officeUuid}`, { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to generate routes');
+        const data = await res.json();
+        this.routes = data.data || [];
+        this.message = '{{ t(lang, "planning.generated") }}';
+      } catch (e) {
+        this.error = true;
+        this.message = e.message;
+      } finally {
+        this.busy = false;
+      }
+    },
+    statusClass(status) {
+      if (status === 'completed') return 'bg-emerald-100 text-emerald-700';
+      if (status === 'in_progress') return 'bg-amber-100 text-amber-800';
+      return 'bg-blue-100 text-blue-700';
+    }
+  }
+}
+</script>
+{% endblock %}
